@@ -2,7 +2,7 @@ import pool from './db/database.js';
 import app from './app.js'
 
 const PORT = process.env.PORT || 3000;
-
+ 
 async function startServer() {
     try {
         await pool.query("SELECT NOW()");
