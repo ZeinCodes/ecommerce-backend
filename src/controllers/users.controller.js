@@ -3,7 +3,6 @@ import * as userService from "../services/users.service.js";
 const getAllUsers = async(req, res) => {
     try {
         const allUsers = await userService.getUsers();
-
         
         res.status(200).json({
             allUsers,
@@ -20,6 +19,7 @@ const getAllUsers = async(req, res) => {
 
 const getUserById = async(req, res) => {
     const { id } = req.params;
+    
     try {
         const user = await userService.getUserById(id);
 
@@ -35,7 +35,27 @@ const getUserById = async(req, res) => {
     }
 }
 
+const postUser = async(req, res) => {
+    const { name, email, passowrd_hash, role } = req.body;
+
+    try {
+        const user = await userService.postUser(name, email, passowrd_hash, role);
+
+        res.status(201).json({
+            message: "New User created",
+            success: true,
+            user
+        })    
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+            success: false
+        })
+    }   
+}
+
 export {
     getAllUsers,
-    getUserById
+    getUserById,
+    postUser
 };

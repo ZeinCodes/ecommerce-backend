@@ -1,8 +1,6 @@
 import * as usersRepository from '../repositories/users.repository.js';
 
 const getUsers = async() => {
-
-    console.log("service reached");
     const users = await usersRepository.findAllUsers();
     if (!users) {
         throw new Error("There is no users in the system");
@@ -18,7 +16,26 @@ const getUserById = async(id) => {
     return user;
 }
 
+const postUser = async(
+    name, email,
+    password_hash, role
+) => { 
+    const validRole = ["admin", "user"];    
+    
+    if (!name || !email || !password_hash || !role) {
+        throw new Error("All fields required");
+    }
+    if (!validRole.includes(role)) {
+        throw new Error("Invalid role");
+    }
+    const user = await usersRepository.addNewUser(
+        name, email, password_hash, role
+    )
+    return user;
+}
+
 export { 
     getUsers,
-    getUserById
+    getUserById,
+    postUser
 };
