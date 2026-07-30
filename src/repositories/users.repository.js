@@ -2,7 +2,9 @@ import pool from "../db/database.js";
 
 const findAllUsers = async () => {
     const result = await pool.query(
-        'SELECT * FROM users'
+        `SELECT * FROM users
+        WHERE deleted_at IS NULL`
+        
     )
     return result.rows;
 }
@@ -10,7 +12,8 @@ const findAllUsers = async () => {
 const findUserById = async(id) => {
     const result = await pool.query(
         `SELECT * FROM users 
-        WHERE id = $1`,
+        WHERE id = $1
+        AND deleted_at IS NULL`,
         [id]
     )
     return result.rows[0]
@@ -58,9 +61,24 @@ const updateUser = async (fields, updates, id) => {
     return result.rows[0];
 }
 
+const deleteUser = async (id) => {
+    const result = await pool.query(
+        `UPDATE users
+        SET deleted_at = NOW(),
+            updated_at = NOW()
+        WHERE id = $1
+        AND deleted_at IS NULL
+        RETURNING *`,
+        [id]
+    );
+
+    return result.rows[0];
+};
+
 export {
     findAllUsers,
     findUserById,
     addNewUser,
-    updateUser
+    updateUser,
+    deleteUser
 }; 

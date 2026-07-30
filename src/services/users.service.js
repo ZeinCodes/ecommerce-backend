@@ -47,9 +47,20 @@ const patchUser = async (fields, updates, id) => {
     return user;
 }
 
+const deleteUser = async (id) => {
+    const user = await usersRepository.deleteUser(id);
+
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    return user;
+};
+
 export { 
     getUsers,
     getUserById,
     postUser,
-    patchUser
+    patchUser,
+    deleteUser
 };
