@@ -37,7 +37,6 @@ const getUserById = async(req, res) => {
 
 const postUser = async(req, res) => {
     const { name, email, passowrd_hash, role } = req.body;
-
     try {
         const user = await userService.postUser(name, email, passowrd_hash, role);
 
@@ -54,8 +53,32 @@ const postUser = async(req, res) => {
     }   
 }
 
+const patchUser = async (req, res) => {
+    const { id } = req.params;
+    const updates  = req.body;
+    const fields = Object.keys(updates);
+
+    console.log(updates);
+    console.log(fields);
+ 
+    try {
+        const user = await userService.patchUser(fields, updates, id);
+        res.status(200).json({
+            message: "User updated",
+            success: true,
+            user
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+            success: false
+        })
+    }
+}
+
 export {
     getAllUsers,
     getUserById,
-    postUser
+    postUser,
+    patchUser
 };

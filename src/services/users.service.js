@@ -34,8 +34,22 @@ const postUser = async(
     return user;
 }
 
+const patchUser = async (fields, updates, id) => {
+    if (!fields.length || !id) {
+        throw new Error("No updates provided");
+    }
+    
+    const user = await usersRepository.updateUser(fields, updates, id);
+
+    if (!user) {
+        throw new Error("No user has this id!")
+    }
+    return user;
+}
+
 export { 
     getUsers,
     getUserById,
-    postUser
+    postUser,
+    patchUser
 };

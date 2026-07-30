@@ -38,8 +38,29 @@ const addNewUser = async(
     return result.rows[0]
 }
 
+const updateUser = async (fields, updates, id) => {
+    const setQuery = fields
+    .map((field, index) => `${field} = $${index + 1}`)
+    .join(", ");
+
+    const values = fields.map(field => updates[field]);
+    values.push(id);
+
+    const result = await pool.query(
+        `UPDATE users
+        SET 
+            ${setQuery},
+            updated_at = NOW()
+        WHERE id = $${values.length}
+        RETURNING *`,
+        values
+    )
+    return result.rows[0];
+}
+
 export {
     findAllUsers,
     findUserById,
-    addNewUser
+    addNewUser,
+    updateUser
 }; 
