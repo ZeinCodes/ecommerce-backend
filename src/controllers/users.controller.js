@@ -76,9 +76,35 @@ const patchUser = async (req, res) => {
     }
 }
 
+const deleteUser = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        await userService.deleteUser(id);
+    
+        res.status(200).json({
+            message: "User has been deleted",
+            success: true
+        })
+    } catch (error) {
+    if (error.message === "User not found") {
+        return res.status(404).json({
+            message: error.message,
+            success: false
+        });
+    }
+
+    res.status(500).json({
+        message: "Internal server error",
+        success: false
+    });
+}
+}
+
 export {
     getAllUsers,
     getUserById,
     postUser,
-    patchUser
+    patchUser,
+    deleteUser 
 };
