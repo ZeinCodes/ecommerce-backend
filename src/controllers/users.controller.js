@@ -36,9 +36,9 @@ const getUserById = async(req, res) => {
 }
 
 const postUser = async(req, res) => {
-    const { name, email, passowrd_hash, role } = req.body;
+    const { name, email, password_hash, role } = req.body;
     try {
-        const user = await userService.postUser(name, email, passowrd_hash, role);
+        const user = await userService.postUser(name, email, password_hash, role);
 
         res.status(201).json({
             message: "New User created",
