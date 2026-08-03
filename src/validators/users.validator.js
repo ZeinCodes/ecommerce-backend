@@ -15,7 +15,7 @@ export const createUserSchema = z.object({
 
     role: z
     .enum(["admin", "user"])
-});
+}).strict();
 
 export const updateUserSchema = 
     createUserSchema
@@ -25,4 +25,4 @@ export const updateUserSchema =
         {
             message: "At least one field is required"
         }
-    );
+    ).strict();

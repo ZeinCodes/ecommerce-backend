@@ -1,6 +1,6 @@
 import * as userService from "../services/users.service.js";
 
-const getAllUsers = async(req, res) => {
+const getAllUsers = async(req, res, next) => {
     try {
         const allUsers = await userService.getUsers();
         
@@ -10,14 +10,11 @@ const getAllUsers = async(req, res) => {
         })
 
     } catch (error) {
-        res.status(500).json({
-            message: "Internal server error",
-            success: false
-        });
+        next(error)
     }
 }
 
-const getUserById = async(req, res) => {
+const getUserById = async(req, res, next) => {
     const { id } = req.params;
     
     try {
@@ -28,14 +25,11 @@ const getUserById = async(req, res) => {
             success: true
         })
     } catch (error) {
-        res.status(404).json({
-            message: "User not found",
-            success: false
-        })
+        next(error)
     }
 }
 
-const postUser = async(req, res) => {
+const postUser = async(req, res, next) => {
     const { name, email, password_hash, role } = req.body;
     try {
         const user = await userService.postUser(name, email, password_hash, role);
@@ -46,14 +40,11 @@ const postUser = async(req, res) => {
             user
         })    
     } catch (error) {
-        res.status(500).json({
-            message: error.message,
-            success: false
-        })
+        next(error);
     }   
 }
 
-const patchUser = async (req, res) => {
+const patchUser = async (req, res, next) => {
     const { id } = req.params;
     const updates  = req.body;
     const fields = Object.keys(updates);
@@ -69,14 +60,11 @@ const patchUser = async (req, res) => {
             user
         })
     } catch (error) {
-        res.status(500).json({
-            message: error.message,
-            success: false
-        })
+        next(error)
     }
 }
 
-const deleteUser = async (req, res) => {
+const deleteUser = async (req, res, next) => {
     const { id } = req.params;
 
     try {
@@ -87,18 +75,8 @@ const deleteUser = async (req, res) => {
             success: true
         })
     } catch (error) {
-    if (error.message === "User not found") {
-        return res.status(404).json({
-            message: error.message,
-            success: false
-        });
+        next(error)
     }
-
-    res.status(500).json({
-        message: "Internal server error",
-        success: false
-    });
-}
 }
 
 export {

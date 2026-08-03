@@ -1,3 +1,5 @@
+import ValidationError from "../errors/ValidationError.js";
+
 const validate = (schema) => {
     return(req, res, next) => {
         const result = schema.safeParse(req.body);
@@ -9,10 +11,7 @@ const validate = (schema) => {
             errors[issue.path[0]] = issue.message;
         });
 
-        return res.status(400).json({
-            success: false,
-            errors
-        });
+        throw new ValidationError(JSON.stringify(errors));
     }
 
         req.body = result.data;
