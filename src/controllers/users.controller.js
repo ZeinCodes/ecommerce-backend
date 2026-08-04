@@ -30,9 +30,9 @@ const getUserById = async(req, res, next) => {
 }
 
 const postUser = async(req, res, next) => {
-    const { name, email, password_hash, role } = req.body;
+    const { name, email, password, role } = req.body;
     try {
-        const user = await userService.postUser(name, email, password_hash, role);
+        const user = await userService.postUser(name, email, password, role);
 
         res.status(201).json({
             message: "New User created",
@@ -49,9 +49,6 @@ const patchUser = async (req, res, next) => {
     const updates  = req.body;
     const fields = Object.keys(updates);
 
-    console.log(updates);
-    console.log(fields);
- 
     try {
         const user = await userService.patchUser(fields, updates, id);
         res.status(200).json({

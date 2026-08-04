@@ -1,5 +1,6 @@
 import NotFoundError from '../errors/NotFoundError.js';
 import * as usersRepository from '../repositories/users.repository.js';
+import bcrypt from 'bcrypt';
 
 const getUsers = async() => {
     const users = await usersRepository.findAllUsers();
@@ -16,10 +17,12 @@ const getUserById = async(id) => {
 
 const postUser = async(
     name, email,
-    password_hash, role
+    password, role
 ) => {       
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await usersRepository.addNewUser(
-        name, email, password_hash, role
+        name, email, hashedPassword, role
     )
     return user;
 }
@@ -39,7 +42,6 @@ const deleteUser = async (id) => {
     if (!user) {
         throw new NotFoundError();
     }
-
     return user;
 };
 

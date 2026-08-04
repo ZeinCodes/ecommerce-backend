@@ -21,7 +21,7 @@ const findUserById = async(id) => {
 
 const addNewUser = async(
     name, email,
-    password_hash, role
+    password, role
 ) => {
     const result = await pool.query(
         `INSERT INTO users(
@@ -29,11 +29,11 @@ const addNewUser = async(
         password_hash, role
         ) 
         VALUES ($1, $2, $3, $4)
-        RETURNING *`, 
+        RETURNING id, name, email, role, created_at`, 
         [
             name, 
             email, 
-            password_hash, 
+            password, 
             role
         ]
         
