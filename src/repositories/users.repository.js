@@ -54,6 +54,7 @@ const updateUser = async (fields, updates, id) => {
             ${setQuery},
             updated_at = NOW()
         WHERE id = $${values.length}
+        AND deleted_at IS NULL
         RETURNING *`,
         values
     )
