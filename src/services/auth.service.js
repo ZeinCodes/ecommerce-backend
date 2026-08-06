@@ -6,8 +6,6 @@ import { generateToken } from "../utils/jwt.js";
 
 const login = async (email, password) => {
     const user = await authRepository.findUserByEmail(email);
-
-    console.log("service")
     
     if (!user) {
         throw new NotFoundError("There is no user with this email");
@@ -27,7 +25,10 @@ const login = async (email, password) => {
     return {
         token,
         user: {
-            name: user.name
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
         }
     }; 
 }

@@ -17,7 +17,7 @@ export const createUserSchema = z.object({
     .enum(["admin", "user"])
 }).strict();
 
-export const authuserLoginSchema = z.object({
+export const loginSchema = z.object({
     email: z
     .email("Invalid email address"),
 

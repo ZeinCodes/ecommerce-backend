@@ -75,7 +75,6 @@ const deleteUser = async (id) => {
 }; 
 
 const findUserByEmail = async (email) => {
-    console.log("Repo")
     const result = await pool.query(
         `SELECT
         id, name, email, role, password_hash 

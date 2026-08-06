@@ -5,10 +5,9 @@ const userLogin = async (req, res, next) => {
         const { email, password } = req.body;
 
         const result = await authService.login(email, password);
-        console.log("controller")
         res.status(200).json({
             success: true,
-            message: `Welcom Back ${result.user.name}`,
+            message: `Welcome Back ${result.user.name}`,
             token: result.token
         })
     } catch (error) {
