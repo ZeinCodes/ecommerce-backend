@@ -3,22 +3,22 @@ import { createUserSchema, updateUserSchema } from "../validators/users.validato
 import validate from "../middlewares/validate.js";
 import * as userController from "../controllers/users.controller.js"
 
-const router = express.Router();
+const usersRouter = express.Router();
 
-router.get('/users', userController.getAllUsers);
+usersRouter.get('/users', userController.getAllUsers);
 
-router.get('/users/:id', userController.getUserById);
+usersRouter.get('/users/:id', userController.getUserById);
 
-router.post('/users', 
+usersRouter.post('/users', 
     validate(createUserSchema),
     userController.postUser,
 );
 
-router.patch('/users/:id', 
+usersRouter.patch('/users/:id', 
     validate(updateUserSchema),
     userController.patchUser
 );
 
-router.delete('/users/:id', userController.deleteUser)
+usersRouter.delete('/users/:id', userController.deleteUser)
 
-export default router;
+export default usersRouter;

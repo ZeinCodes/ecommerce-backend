@@ -35,8 +35,7 @@ const addNewUser = async(
             email, 
             password, 
             role
-        ]
-        
+        ]   
     )
     return result.rows[0]
 }
@@ -59,7 +58,7 @@ const updateUser = async (fields, updates, id) => {
         values
     )
     return result.rows[0];
-}
+};
 
 const deleteUser = async (id) => {
     const result = await pool.query(
@@ -73,12 +72,26 @@ const deleteUser = async (id) => {
     );
 
     return result.rows[0];
-};
+}; 
+
+const findUserByEmail = async (email) => {
+    console.log("Repo")
+    const result = await pool.query(
+        `SELECT
+        id, name, email, role, password_hash 
+        FROM users
+        WHERE email = $1
+        AND deleted_at IS NULL`,
+        [email]
+    )
+    return result.rows[0];
+}
 
 export {
     findAllUsers,
     findUserById,
     addNewUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    findUserByEmail
 }; 
