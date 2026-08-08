@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import UnauthorizedError from "../errors/UnauthorizedError.js";
 
 const generateToken = (user) => {
     const token = jwt.sign(
@@ -14,6 +15,19 @@ const generateToken = (user) => {
     return token;
 }
 
+const verifyToken = (token) => {
+    try {
+        const result = jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        )
+        return result;
+    } catch (error) {
+        throw new UnauthorizedError();
+    }
+}
+
 export {
-    generateToken
+    generateToken,
+    verifyToken
 }

@@ -2,23 +2,42 @@ import express from "express"
 import { createUserSchema, updateUserSchema } from "../validators/users.validator.js";
 import validate from "../middlewares/validate.js";
 import * as userController from "../controllers/users.controller.js"
+import authenticate from "../middlewares/authentication.js";
+import authorize from "../middlewares/authorization.js";
+
 
 const usersRouter = express.Router();
 
-usersRouter.get('/users', userController.getAllUsers);
+usersRouter.get('/users', 
+    authenticate,
+    authorize("admin"),
+    userController.getAllUsers
+);
 
-usersRouter.get('/users/:id', userController.getUserById);
+usersRouter.get('/users/:id',
+    authenticate,    
+    authorize("admin"),
+    userController.getUserById
+);
 
 usersRouter.post('/users', 
+    authenticate,
+    authorize("admin"),
     validate(createUserSchema),
     userController.postUser,
 );
 
-usersRouter.patch('/users/:id', 
+usersRouter.patch('/users/:id',
+    authenticate,
+    authorize("admin"), 
     validate(updateUserSchema),
     userController.patchUser
 );
 
-usersRouter.delete('/users/:id', userController.deleteUser)
+usersRouter.delete('/users/:id',
+    authenticate,
+    authorize("admin"),
+    userController.deleteUser
+);
 
 export default usersRouter;

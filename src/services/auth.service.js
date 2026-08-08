@@ -8,7 +8,7 @@ const login = async (email, password) => {
     const user = await authRepository.findUserByEmail(email);
     
     if (!user) {
-        throw new NotFoundError("There is no user with this email");
+        throw new NotFoundError("Invalid credentials");
     }
 
     const isPassed = await bcrypt.compare(
@@ -17,7 +17,7 @@ const login = async (email, password) => {
     );
 
     if (!isPassed) {
-        throw new UnauthorizedError("Wrong password");
+        throw new UnauthorizedError("Invalid credentials");
     }
 
     const token = generateToken(user);
