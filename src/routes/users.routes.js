@@ -4,18 +4,19 @@ import validate from "../middlewares/validate.js";
 import * as userController from "../controllers/users.controller.js"
 import authenticate from "../middlewares/authentication.js";
 import authorize from "../middlewares/authorization.js";
+import authorizeOwner from "../middlewares/ownership.js";
 
 
 const usersRouter = express.Router();
 
 usersRouter.get('/users', 
-    authenticate,
+    authenticate,  
     authorize("admin"),
     userController.getAllUsers
 );
 
 usersRouter.get('/users/:id',
-    authenticate,    
+    authenticate, 
     authorize("admin"),
     userController.getUserById
 );
@@ -29,14 +30,14 @@ usersRouter.post('/users',
 
 usersRouter.patch('/users/:id',
     authenticate,
-    authorize("admin"), 
+    authorizeOwner(),
     validate(updateUserSchema),
     userController.patchUser
 );
 
 usersRouter.delete('/users/:id',
     authenticate,
-    authorize("admin"),
+    authorizeOwner(),
     userController.deleteUser
 );
 
