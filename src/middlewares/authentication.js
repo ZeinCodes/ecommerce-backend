@@ -8,11 +8,11 @@ const authenticate = (req, res, next) => {
         if (!authHeader) {
             throw new UnauthorizedError("Authentication required");
         }
-        
-        const [scheme, token] = authHeader.split(" ")
+
+        const [scheme, token] = authHeader.split(" ");
 
         if (scheme !== "Bearer" || !token) {
-            throw new UnauthorizedError("Invalide authorization header");
+            throw new UnauthorizedError("Invalid authorization header");
         }
 
         const decoded = verifyToken(token);

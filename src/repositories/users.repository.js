@@ -2,90 +2,145 @@ import pool from "../db/database.js";
 
 const findAllUsers = async () => {
     const result = await pool.query(
-        `SELECT * FROM users
-        WHERE deleted_at IS NULL`
-        
-    )
-    return result.rows;
-}
+        `SELECT
+            id,
+            name,
+            email,
+            role,
+            created_at,
+            updated_at
+         FROM users
+         WHERE deleted_at IS NULL`
+    );
 
-const findUserById = async(id) => {
-    const result = await pool.query(
-        `SELECT * FROM users 
-        WHERE id = $1
-        AND deleted_at IS NULL`,
-        [id]
-    )
-    return result.rows[0]
+    return result.rows;
 };
 
-const addNewUser = async(
-    name, email,
-    password, role
+const findUserById = async (id) => {
+    const result = await pool.query(
+        `SELECT
+            id,
+            name,
+            email,
+            role,
+            created_at,
+            updated_at
+         FROM users
+         WHERE id = $1
+         AND deleted_at IS NULL`,
+        [id]
+    );
+
+    return result.rows[0];
+};
+
+const addNewUser = async (
+    name,
+    email,
+    passwordHash,
+    role
 ) => {
     const result = await pool.query(
-        `INSERT INTO users(
-        name, email,
-        password_hash, role
-        ) 
-        VALUES ($1, $2, $3, $4)
-        RETURNING id, name, email, role, created_at`, 
-        [
-            name, 
-            email, 
-            password, 
+        `INSERT INTO users (
+            name,
+            email,
+            password_hash,
             role
-        ]   
-    )
-    return result.rows[0]
-}
+        )
+        VALUES ($1, $2, $3, $4)
+        RETURNING
+            id,
+            name,
+            email,
+            role,
+            created_at`,
+        [
+            name,
+            email,
+            passwordHash,
+            role
+        ]
+    );
 
-const updateUser = async (fields, updates, id) => {
+    return result.rows[0];
+};
+
+const updateUser = async (updates, id) => {
+    const allowedFields = {
+        name: "name",
+        email: "email",
+        password: "password_hash"
+    };
+
+    const fields = Object.keys(updates);
+
     const setQuery = fields
-    .map((field, index) => `${field} = $${index + 1}`)
-    .join(", ");
+        .map((field, index) => {
+            return `${allowedFields[field]} = $${index + 1}`;
+        })
+        .join(", ");
 
-    const values = fields.map(field => updates[field]);
+    const values = fields.map((field) => updates[field]);
+
     values.push(id);
 
     const result = await pool.query(
         `UPDATE users
-        SET 
+         SET
             ${setQuery},
             updated_at = NOW()
-        WHERE id = $${values.length}
-        AND deleted_at IS NULL
-        RETURNING *`,
+         WHERE id = $${values.length}
+         AND deleted_at IS NULL
+         RETURNING
+            id,
+            name,
+            email,
+            role,
+            created_at,
+            updated_at`,
         values
-    )
+    );
+
     return result.rows[0];
 };
 
 const deleteUser = async (id) => {
     const result = await pool.query(
         `UPDATE users
-        SET deleted_at = NOW(),
+         SET
+            deleted_at = NOW(),
             updated_at = NOW()
-        WHERE id = $1
-        AND deleted_at IS NULL
-        RETURNING *`,
+         WHERE id = $1
+         AND deleted_at IS NULL
+         RETURNING
+            id,
+            name,
+            email,
+            role,
+            created_at,
+            updated_at`,
         [id]
     );
 
     return result.rows[0];
-}; 
+};
 
 const findUserByEmail = async (email) => {
     const result = await pool.query(
         `SELECT
-        id, name, email, role, password_hash 
-        FROM users
-        WHERE email = $1
-        AND deleted_at IS NULL`,
+            id,
+            name,
+            email,
+            role,
+            password_hash
+         FROM users
+         WHERE email = $1
+         AND deleted_at IS NULL`,
         [email]
-    )
+    );
+
     return result.rows[0];
-}
+};
 
 export {
     findAllUsers,
@@ -94,4 +149,4 @@ export {
     updateUser,
     deleteUser,
     findUserByEmail
-}; 
+};

@@ -36,10 +36,10 @@ const findCategoryByName = async (name) => {
 
 const addNewCategory = async (name) => {
     const result = await pool.query(
-        `INSERT INTO categories
+        `INSERT INTO categories (name)
          VALUES ($1)
          RETURNING *`,
-         [name]
+        [name]
     );
 
     return result.rows[0];

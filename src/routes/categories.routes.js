@@ -1,36 +1,46 @@
 import express from "express";
 import categoryController from "../controllers/categories.controllers.js";
+import validate from "../middlewares/validate.js";
+import authenticate from "../middlewares/authentication.js";
+import authorize from "../middlewares/authorization.js";
+import {
+    createCategorySchema,
+    updateCategorySchema
+} from "../validators/categories.validator.js";
 
 const categoriesRouter = express.Router();
 
 categoriesRouter.get(
-    '/categories',
+    "/categories",
     categoryController.getAllCategories
-)
+);
 
 categoriesRouter.get(
-    '/categories/:id',
+    "/categories/:id",
     categoryController.getCategoryById
-)
- 
-categoriesRouter.get(
-    '/categories',
-    categoryController.getCategoryByName
-)
- 
+);
+
 categoriesRouter.post(
-    '/categories',
+    "/categories",
+    authenticate,
+    authorize("admin"),
+    validate(createCategorySchema),
     categoryController.postCategory
-)
- 
+);
+
 categoriesRouter.patch(
-    '/categories/:id',
+    "/categories/:id",
+    authenticate,
+    authorize("admin"),
+    validate(updateCategorySchema),
     categoryController.patchCategory
-)
- 
+);
+
 categoriesRouter.delete(
-    '/categories/:id',
+    "/categories/:id",
+    authenticate,
+    authorize("admin"),
     categoryController.deleteCategory
-)
- 
+);
+
 export default categoriesRouter;

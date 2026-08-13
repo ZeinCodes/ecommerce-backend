@@ -9,25 +9,25 @@ const generateToken = (user) => {
         },
         process.env.JWT_SECRET,
         {
-            expiresIn: "1h"
+            expiresIn: "30d"
         }
     );
+
     return token;
-}
+};
 
 const verifyToken = (token) => {
     try {
-        const result = jwt.verify(
+        return jwt.verify(
             token,
             process.env.JWT_SECRET
-        )
-        return result;
+        );
     } catch (error) {
-        throw new UnauthorizedError();
+        throw new UnauthorizedError("Invalid or expired token");
     }
-}
+};
 
 export {
     generateToken,
     verifyToken
-}
+};
