@@ -1,8 +1,8 @@
 import AppError from "./AppError.js";
 
 class ValidationError extends AppError {
-    constructor(message = "Validation") {
-        super(message, 422)
+    constructor(message = "Validation failed") {
+        super(message, 422);
     }
 }
 

@@ -1,14 +1,13 @@
-import NotFoundError from "../errors/NotFoundError.js";
-import bcrypt from 'bcrypt';
-import * as authRepository from "../repositories/users.repository.js"
+import bcrypt from "bcrypt";
+import * as authRepository from "../repositories/users.repository.js";
 import UnauthorizedError from "../errors/UnauthorizedError.js";
 import { generateToken } from "../utils/jwt.js";
 
 const login = async (email, password) => {
     const user = await authRepository.findUserByEmail(email);
-    
+
     if (!user) {
-        throw new NotFoundError("Invalid credentials");
+        throw new UnauthorizedError("Invalid credentials");
     }
 
     const isPassed = await bcrypt.compare(
@@ -30,9 +29,9 @@ const login = async (email, password) => {
             email: user.email,
             role: user.role
         }
-    }; 
-}
+    };
+};
 
 export {
     login
-} 
+};
