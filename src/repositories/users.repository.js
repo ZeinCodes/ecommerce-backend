@@ -10,7 +10,8 @@ const findAllUsers = async () => {
             created_at,
             updated_at
          FROM users
-         WHERE deleted_at IS NULL`
+         WHERE deleted_at IS NULL
+         ORDER BY created_at DESC`
     );
 
     return result.rows;
@@ -75,12 +76,15 @@ const updateUser = async (updates, id) => {
     const fields = Object.keys(updates);
 
     const setQuery = fields
-        .map((field, index) => {
-            return `${allowedFields[field]} = $${index + 1}`;
-        })
+        .map(
+            (field, index) =>
+                `${allowedFields[field]} = $${index + 1}`
+        )
         .join(", ");
 
-    const values = fields.map((field) => updates[field]);
+    const values = fields.map(
+        field => updates[field]
+    );
 
     values.push(id);
 
