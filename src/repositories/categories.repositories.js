@@ -4,7 +4,8 @@ const findAllCategories = async () => {
     const result = await pool.query(
         `SELECT *
          FROM categories
-         WHERE deleted_at IS NULL`
+         WHERE deleted_at IS NULL
+         ORDER BY created_at DESC`
     );
 
     return result.rows;

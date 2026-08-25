@@ -67,12 +67,30 @@ const addNewProduct = async (
     return result.rows[0];
 };
 
-const updateProduct = async (fields, updates, id) => {
+const updateProduct = async (
+    fields,
+    updates,
+    id
+) => {
+    const allowedFields = {
+        category_id: "category_id",
+        name: "name",
+        description: "description",
+        price: "price",
+        stock: "stock",
+        sku: "sku"
+    };
+
     const setQuery = fields
-        .map((field, index) => `${field} = $${index + 1}`)
+        .map(
+            (field, index) =>
+                `${allowedFields[field]} = $${index + 1}`
+        )
         .join(", ");
 
-    const values = fields.map((field) => updates[field]);
+    const values = fields.map(
+        field => updates[field]
+    );
 
     values.push(id);
 
