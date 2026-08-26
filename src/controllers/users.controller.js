@@ -2,11 +2,27 @@ import * as userService from "../services/users.service.js";
 
 const getAllUsers = async (req, res, next) => {
     try {
-        const allUsers = await userService.getUsers();
+        const { page, limit } = req.validated.query;
+
+        const result = await userService.getUsers(
+            page, limit
+        );
+
+        const totalPages = Math.ceil(
+            result.total / limit
+        )
 
         res.status(200).json({
             success: true,
-            allUsers
+            result: result.users,
+            pagination: {
+                page,
+                limit,
+                total: result.total,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1
+            }
         });
     } catch (error) {
         next(error);

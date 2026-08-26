@@ -1,8 +1,8 @@
 import NotFoundError from "../errors/NotFoundError.js";
 import productsRepository from "../repositories/products.repository.js";
 
-const getAllProducts = async () => {
-    return await productsRepository.findAllProducts();
+const getAllProducts = async (page, limit) => {
+    return await productsRepository.findAllProducts(page, limit);
 };
 
 const getProductById = async (id) => {

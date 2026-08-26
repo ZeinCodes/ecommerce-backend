@@ -2,16 +2,41 @@ import productsService from "../services/products.service.js";
 
 const getAllProducts = async (req, res, next) => {
     try {
+
+        const { page, limit } = req.validated.query;
         const { name } = req.query;
 
-        const result = name
-            ? await productsService.getProductByName(name)
-            : await productsService.getAllProducts();
+        if (name) {
+            const result = await productsService.getProductByName(name);
+
+            return res.status(200).json({
+                success: true,
+                result
+            });
+        }
+
+        const result = await productsService.getAllProducts(
+            page,
+            limit
+        );
+
+        const totalPages = Math.ceil(
+            result.total / limit
+        );
 
         res.status(200).json({
             success: true,
-            result
+            result: result.products,
+            pagination: {
+                page,
+                limit,
+                total: result.total,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1
+            }
         });
+
     } catch (error) {
         next(error);
     }

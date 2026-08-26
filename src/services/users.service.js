@@ -2,10 +2,9 @@ import NotFoundError from "../errors/NotFoundError.js";
 import * as usersRepository from "../repositories/users.repository.js";
 import bcrypt from "bcrypt";
 
-const getUsers = async () => {
-    const users = await usersRepository.findAllUsers();
+const getUsers = async (page, limit) => {
+    return await usersRepository.findAllUsers(page, limit);
 
-    return users;
 };
 
 const getUserById = async (id) => {

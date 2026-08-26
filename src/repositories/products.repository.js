@@ -1,14 +1,28 @@
 import pool from "../db/database.js";
 
-const findAllProducts = async () => {
-    const result = await pool.query(
+const findAllProducts = async (page, limit) => {
+    const offset = (page - 1) * limit;
+
+    const productsResult = await pool.query(
         `SELECT *
          FROM products
          WHERE deleted_at IS NULL
-         ORDER BY created_at DESC`
+         ORDER BY created_at DESC, id DESC
+         LIMIT $1
+         OFFSET $2`,
+        [limit, offset]
     );
 
-    return result.rows;
+    const countResult = await pool.query(
+        `SELECT COUNT(*)
+         FROM products
+         WHERE deleted_at IS NULL`
+    );
+
+    return {
+        products: productsResult.rows,
+        total: Number(countResult.rows[0].count)
+    }
 };
 
 const findProductById = async (id) => {

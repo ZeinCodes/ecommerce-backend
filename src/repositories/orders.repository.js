@@ -1,16 +1,31 @@
 import pool from "../db/database.js";
 
-const getOrders = async (userId) => {
-    const result = await pool.query(
+const getOrders = async (userId, page, limit) => {
+    const offset = (page - 1) * limit;
+    
+    const ordersResults = await pool.query(
         `SELECT *
          FROM orders
          WHERE user_id = $1
          AND deleted_at IS NULL
-         ORDER BY created_at DESC`,
-        [userId]
+         ORDER BY created_at DESC, id DESC
+         LIMIT $2
+         OFFSET $3`,
+        [userId, limit, offset]
     );
 
-    return result.rows;
+    const countResult = await pool.query(
+        `SELECT COUNT(*)
+         FROM orders
+         WHERE user_id = $1
+         AND deleted_at IS NULL`,
+         [userId]
+    )
+    
+    return {
+        orders: ordersResults.rows,
+        total: Number(countResult.rows[0].count)
+    } 
 };
 
 const getOrdersById = async (id, userId) => {

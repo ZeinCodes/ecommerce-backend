@@ -1,10 +1,8 @@
 import NotFoundError from "../errors/NotFoundError.js";
 import categoriesRepository from "../repositories/categories.repositories.js";
 
-const getAllCategories = async () => {
-    const result = await categoriesRepository.findAllCategories();
-
-    return result;
+const getAllCategories = async (page, limit) => {
+    return categoriesRepository.findAllCategories(page, limit);
 };
 
 const getCategoryById = async (id) => {
