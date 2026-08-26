@@ -1,14 +1,19 @@
 import ValidationError from "../errors/ValidationError.js";
 
-const validate = (schema) => {
+const validate = (schema, source = "body") => {
+
     return (req, res, next) => {
+
         try {
-            const result = schema.safeParse(req.body);
+
+            const result = schema.safeParse(req[source]);
 
             if (!result.success) {
+
                 const errors = {};
 
                 result.error.issues.forEach((issue) => {
+
                     const field = issue.path[0];
 
                     if (field) {
@@ -18,14 +23,21 @@ const validate = (schema) => {
                     }
                 });
 
-                throw new ValidationError(JSON.stringify(errors));
+                throw new ValidationError(
+                    JSON.stringify(errors)
+                );
             }
 
-            req.body = result.data;
+            req.validated = req.validated || {};
+
+            req.validated[source] = result.data;
 
             next();
+
         } catch (error) {
+
             next(error);
+
         }
     };
 };

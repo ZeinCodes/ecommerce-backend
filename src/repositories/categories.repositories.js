@@ -1,14 +1,28 @@
 import pool from "../db/database.js";
 
-const findAllCategories = async () => {
-    const result = await pool.query(
+const findAllCategories = async (page, limit) => {
+    const offset = (page - 1) * limit;
+    
+    const categoriesResult = await pool.query(
         `SELECT *
          FROM categories
          WHERE deleted_at IS NULL
-         ORDER BY created_at DESC`
+         ORDER BY created_at DESC, id DESC
+         LIMIT $1
+         OFFSET $2`,
+        [limit, offset]
     );
 
-    return result.rows;
+    const countResult = await pool.query(
+        `SELECT COUNT(*)
+         FROM categories
+         WHERE deleted_at IS NULL`
+    )
+
+    return {
+        categories: categoriesResult.rows,
+        total: Number(countResult.rows[0].count)
+    }
 };
 
 const findCategoryById = async (id) => {

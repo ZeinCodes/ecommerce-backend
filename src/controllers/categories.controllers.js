@@ -3,15 +3,36 @@ import categoriesService from "../services/categories.service.js";
 const getAllCategories = async (req, res, next) => {
     try {
         const { name } = req.query;
+        const { page, limit } = req.validated.query;
 
-        const result = name
-            ? await categoriesService.getCategoryByName(name)
-            : await categoriesService.getAllCategories();
+        if (name) {
+            const result = await categoriesService.getCategoryByName(name);
+    
+            return res.status(200).json({
+                success: true,
+                result
+            });
+        }
+
+        const result = await categoriesService.getAllCategories(page, limit);
+
+        const totalPages = Math.ceil(
+            result.total / limit
+        )
 
         res.status(200).json({
             success: true,
-            result
-        });
+            result: result.categories,
+            pagination: {
+                page,
+                limit,
+                total: result.total,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1
+            }
+        })
+
     } catch (error) {
         next(error);
     }

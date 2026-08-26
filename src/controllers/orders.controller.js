@@ -4,20 +4,35 @@ const getOrders = async (req, res, next) => {
     try {
         const { id } = req.params;
         const userId = req.user.id;
+        const { page, limit } = req.validated.query;
 
-        const orders = id
-            ? await ordersService.getOrdersById(
-                id,
-                userId
-            )
-            : await ordersService.getOrders(
-                userId
-            );
+        if (id) {
+            const order = await ordersService.getOrdersById(id);
 
+            return res.status(200).json({
+                message: "Order",
+                success: true,
+                order
+            });
+        }
+
+        const result = await ordersService.getOrders(userId, page, limit);
+
+        const totalPages = Math.ceil(
+            result.total / limit
+        )
+        
         res.status(200).json({
-            message: "Orders",
             success: true,
-            orders
+            result: result.orders,
+            pagination: {
+                page,
+                limit,
+                total: result.total,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1
+            }
         });
     } catch (error) {
         next(error);

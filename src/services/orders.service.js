@@ -2,8 +2,8 @@ import ordersRepository from "../repositories/orders.repository.js";
 import NotFoundError from "../errors/NotFoundError.js";
 import BadRequestError from "../errors/BadRequestError.js";
 
-const getOrders = async (userId) => {
-    return await ordersRepository.getOrders(userId);
+const getOrders = async (userId, page, limit) => {
+    return ordersRepository.getOrders(userId, page, limit);
 };
 
 const getOrdersById = async (id, userId) => {
