@@ -7,13 +7,13 @@ import {
     createProductSchema,
     updateProductSchema
 } from "../validators/products.validator.js";
-import { paginationSchema } from "../validators/pagination.validation.js";
+import { productsQuerySchema } from "../validators/pagination.validation.js";
 
 const productsRouter = express.Router();
 
 productsRouter.get(
     "/products",
-    validate(paginationSchema, "query"),
+    validate(productsQuerySchema, "query"),
     productsController.getAllProducts
 );
 

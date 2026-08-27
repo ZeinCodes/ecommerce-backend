@@ -7,13 +7,13 @@ import {
     createCategorySchema,
     updateCategorySchema
 } from "../validators/categories.validator.js";
-import { paginationSchema } from "../validators/pagination.validation.js";
+import { productsQuerySchema } from "../validators/pagination.validation.js";
 
 const categoriesRouter = express.Router();
 
 categoriesRouter.get(
     "/categories",
-    validate(paginationSchema, "query"),
+    validate(productsQuerySchema, "query"),
     categoryController.getAllCategories
 );
 

@@ -8,7 +8,7 @@ import * as userController from "../controllers/users.controller.js";
 import authenticate from "../middlewares/authentication.js";
 import authorize from "../middlewares/authorization.js";
 import authorizeOwner from "../middlewares/ownership.js";
-import { paginationSchema } from "../validators/pagination.validation.js";
+import { productsQuerySchema } from "../validators/pagination.validation.js";
 
 const usersRouter = express.Router();
 
@@ -16,7 +16,7 @@ usersRouter.get(
     "/users",
     authenticate,
     authorize("admin"),
-    validate(paginationSchema, "query"),
+    validate(productsQuerySchema, "query"),
     userController.getAllUsers
 );
 
