@@ -8,7 +8,9 @@ const getAllProducts = async (req, res, next) => {
             category_id,
             min_price,
             max_price,
-            name
+            name,
+            sortBy,
+            order
         } = req.validated.query;
 
         const result = await productsService.getAllProducts(
@@ -17,7 +19,9 @@ const getAllProducts = async (req, res, next) => {
             category_id,
             min_price,
             max_price,
-            name
+            name,
+            sortBy,
+            order
         );
 
         const totalPages = Math.ceil(
