@@ -6,5 +6,16 @@ export const productsQuerySchema = z.object({
     category_id: z.uuid().optional(),
     min_price: z.coerce.number().nonnegative().default(0).optional(),
     max_price: z.coerce.number().nonnegative().optional(),
-    name: z.string().optional()
+    name: z.string().optional(),
+    sortBy: z.enum([
+        "created_at",
+        "name",
+        "price",
+        "stock"
+    ]).default("created_at").optional(),
+
+    order: z.enum([
+        "asc",
+        "desc"
+    ]).default("desc").optional()
 });

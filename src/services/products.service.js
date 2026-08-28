@@ -7,7 +7,9 @@ const getAllProducts = async (
     category_id,
     min_price,
     max_price,
-    name
+    name,
+    sortBy,
+    order
 ) => {
     return productsRepository.findAllProducts(
         page,
@@ -15,7 +17,9 @@ const getAllProducts = async (
         category_id,
         min_price,
         max_price,
-        name
+        name,
+        sortBy,
+        order
     );
 };
 

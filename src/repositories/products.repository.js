@@ -6,7 +6,9 @@ const findAllProducts = async (
     category_id,
     min_price,
     max_price,
-    name
+    name,
+    sortBy,
+    order
 ) => {
     const offset = (page - 1) * limit;
 
@@ -15,6 +17,7 @@ const findAllProducts = async (
 
     if (category_id) {
         values.push(category_id);
+
         conditions.push(
             `category_id = $${values.length}`
         );
@@ -22,6 +25,7 @@ const findAllProducts = async (
 
     if (min_price !== undefined) {
         values.push(min_price);
+
         conditions.push(
             `price >= $${values.length}`
         );
@@ -29,6 +33,7 @@ const findAllProducts = async (
 
     if (max_price !== undefined) {
         values.push(max_price);
+
         conditions.push(
             `price <= $${values.length}`
         );
@@ -36,12 +41,24 @@ const findAllProducts = async (
 
     if (name) {
         values.push(`%${name}%`);
+
         conditions.push(
             `name ILIKE $${values.length}`
         );
     }
 
     const whereClause = conditions.join(" AND ");
+
+    const allowedSortFields = {
+        created_at: "created_at",
+        name: "name",
+        price: "price",
+        stock: "stock"
+    };
+
+    const sortColumn = allowedSortFields[sortBy];
+
+    const orderDirection = order.toUpperCase();
 
     const limitPlaceholder = values.length + 1;
     const offsetPlaceholder = values.length + 2;
@@ -60,7 +77,7 @@ const findAllProducts = async (
         `SELECT *
          FROM products
          WHERE ${whereClause}
-         ORDER BY created_at DESC, id DESC
+         ORDER BY ${sortColumn} ${orderDirection}, id DESC
          LIMIT $${limitPlaceholder}
          OFFSET $${offsetPlaceholder}`,
         productsValues
