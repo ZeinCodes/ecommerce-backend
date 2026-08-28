@@ -2,15 +2,20 @@ import NotFoundError from "../errors/NotFoundError.js";
 import productsRepository from "../repositories/products.repository.js";
 
 const getAllProducts = async (
-    page, 
-    limit, 
-    category_id, 
-    min_price, 
-    max_price
+    page,
+    limit,
+    category_id,
+    min_price,
+    max_price,
+    name
 ) => {
-    
     return productsRepository.findAllProducts(
-        page, limit, category_id, min_price, max_price
+        page,
+        limit,
+        category_id,
+        min_price,
+        max_price,
+        name
     );
 };
 
