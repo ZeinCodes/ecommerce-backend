@@ -7,14 +7,14 @@ import {
 import authenticate from "../middlewares/authentication.js";
 import authorize from "../middlewares/authorization.js";
 import validate from "../middlewares/validate.js";
-import { paginationSchema } from "../validators/pagination.validation.js"
+import { productsQuerySchema } from "../validators/pagination.validation.js"
 
 const ordersRouter = express.Router();
 
 ordersRouter.get(
     "/orders",
     authenticate,
-    validate(paginationSchema, "query"),
+    validate(productsQuerySchema, "query"),
     ordersController.getOrders
 );
 

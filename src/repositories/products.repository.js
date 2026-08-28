@@ -1,28 +1,82 @@
 import pool from "../db/database.js";
 
-const findAllProducts = async (page, limit) => {
+const findAllProducts = async (
+    page,
+    limit,
+    category_id,
+    min_price,
+    max_price,
+    name
+) => {
     const offset = (page - 1) * limit;
+
+    const conditions = ["deleted_at IS NULL"];
+    const values = [];
+
+    if (category_id) {
+        values.push(category_id);
+        conditions.push(
+            `category_id = $${values.length}`
+        );
+    }
+
+    if (min_price !== undefined) {
+        values.push(min_price);
+        conditions.push(
+            `price >= $${values.length}`
+        );
+    }
+
+    if (max_price !== undefined) {
+        values.push(max_price);
+        conditions.push(
+            `price <= $${values.length}`
+        );
+    }
+
+    if (name) {
+        values.push(`%${name}%`);
+        conditions.push(
+            `name ILIKE $${values.length}`
+        );
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    const limitPlaceholder = values.length + 1;
+    const offsetPlaceholder = values.length + 2;
+
+    const productsValues = [
+        ...values,
+        limit,
+        offset
+    ];
+
+    const countValues = [
+        ...values
+    ];
 
     const productsResult = await pool.query(
         `SELECT *
          FROM products
-         WHERE deleted_at IS NULL
+         WHERE ${whereClause}
          ORDER BY created_at DESC, id DESC
-         LIMIT $1
-         OFFSET $2`,
-        [limit, offset]
+         LIMIT $${limitPlaceholder}
+         OFFSET $${offsetPlaceholder}`,
+        productsValues
     );
 
     const countResult = await pool.query(
         `SELECT COUNT(*)
          FROM products
-         WHERE deleted_at IS NULL`
+         WHERE ${whereClause}`,
+        countValues
     );
 
     return {
         products: productsResult.rows,
         total: Number(countResult.rows[0].count)
-    }
+    };
 };
 
 const findProductById = async (id) => {
