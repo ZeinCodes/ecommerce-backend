@@ -1,31 +1,36 @@
 import AppError from "../errors/AppError.js";
 
 const errorHandler = (error, req, res, next) => {
+
     if (error instanceof AppError) {
         return res.status(error.statusCode).json({
             success: false,
-            message: error.message
+            message: error.message,
+            errors: error.errors
         });
     }
 
+    // PostgreSQL: unique violation
     if (error.code === "23505") {
         return res.status(409).json({
             success: false,
-            message: "Conflict"
+            message: "Resource already exists"
         });
     }
 
+    // PostgreSQL: foreign key violation
     if (error.code === "23503") {
         return res.status(400).json({
             success: false,
-            message: "Bad request"
+            message: "Referenced resource does not exist"
         });
     }
 
-    if (error.code === "22P05") {
+    // PostgreSQL: invalid input syntax
+    if (error.code === "22P02") {
         return res.status(400).json({
             success: false,
-            message: "Bad request"
+            message: "Invalid input"
         });
     }
 
