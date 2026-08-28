@@ -24,7 +24,9 @@ const validate = (schema, source = "body") => {
                 });
 
                 throw new ValidationError(
-                    JSON.stringify(errors)
+                    "Validation failed",
+                    errors,
+                    console.log(errors)
                 );
             }
 
