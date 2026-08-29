@@ -166,6 +166,16 @@ const updateProduct = async (
         sku: "sku"
     };
 
+    const invalidFields = fields.filter(
+        field => !allowedFields[field]
+    );
+
+    if (invalidFields.length > 0) {
+        throw new Error(
+            `Invalid update fields: ${invalidFields.join(", ")}`
+        );
+    }
+
     const setQuery = fields
         .map(
             (field, index) =>
