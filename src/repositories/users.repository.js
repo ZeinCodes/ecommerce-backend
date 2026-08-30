@@ -22,7 +22,6 @@ const findAllUsers = async (page, limit) => {
     const countResult = await pool.query(
         `SELECT COUNT(*)
          FROM users
-         WHERE user_id
          WHERE deleted_at IS NULL`
     )
 
@@ -90,6 +89,16 @@ const updateUser = async (updates, id) => {
 
     const fields = Object.keys(updates);
 
+    const invalidFields = fields.filter(
+        field => !allowedFields[field]
+    );
+
+    if (invalidFields.length > 0) {
+        throw new Error(
+            `Invalid update fields: ${invalidFields.join(", ")}`
+        );
+    }
+    
     const setQuery = fields
         .map(
             (field, index) =>

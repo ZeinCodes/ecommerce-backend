@@ -7,7 +7,7 @@ const getOrders = async (req, res, next) => {
         const { page, limit } = req.validated.query;
 
         if (id) {
-            const order = await ordersService.getOrdersById(id);
+            const order = await ordersService.getOrdersById(id, userId);
 
             return res.status(200).json({
                 message: "Order",
