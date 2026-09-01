@@ -1,14 +1,16 @@
 import pool from "../db/database.js";
+import BadRequestError from "../errors/BadRequestError.js";
+import NotFoundError from "../errors/NotFoundError.js";
 
 const findAllProducts = async (
-    page,
-    limit,
+    page = 1,
+    limit = 20,
     category_id,
     min_price,
     max_price,
     name,
     sortBy,
-    order
+    order = "ASC"
 ) => {
     const offset = (page - 1) * limit;
 
@@ -17,34 +19,22 @@ const findAllProducts = async (
 
     if (category_id) {
         values.push(category_id);
-
-        conditions.push(
-            `category_id = $${values.length}`
-        );
+        conditions.push(`category_id = $${values.length}`);
     }
 
     if (min_price !== undefined) {
         values.push(min_price);
-
-        conditions.push(
-            `price >= $${values.length}`
-        );
+        conditions.push(`price >= $${values.length}`);
     }
 
     if (max_price !== undefined) {
         values.push(max_price);
-
-        conditions.push(
-            `price <= $${values.length}`
-        );
+        conditions.push(`price <= $${values.length}`);
     }
 
     if (name) {
         values.push(`%${name}%`);
-
-        conditions.push(
-            `name ILIKE $${values.length}`
-        );
+        conditions.push(`name ILIKE $${values.length}`);
     }
 
     const whereClause = conditions.join(" AND ");
@@ -56,22 +46,14 @@ const findAllProducts = async (
         stock: "stock"
     };
 
-    const sortColumn = allowedSortFields[sortBy];
-
-    const orderDirection = order.toUpperCase();
+    const sortColumn = allowedSortFields[sortBy] || "created_at";
+    const orderDirection = (order && order.toString().toUpperCase() === "DESC") ? "DESC" : "ASC";
 
     const limitPlaceholder = values.length + 1;
     const offsetPlaceholder = values.length + 2;
 
-    const productsValues = [
-        ...values,
-        limit,
-        offset
-    ];
-
-    const countValues = [
-        ...values
-    ];
+    const productsValues = [...values, limit, offset];
+    const countValues = [...values];
 
     const productsResult = await pool.query(
         `SELECT *
@@ -152,11 +134,7 @@ const addNewProduct = async (
     return result.rows[0];
 };
 
-const updateProduct = async (
-    fields,
-    updates,
-    id
-) => {
+const updateProduct = async (fields, updates, id) => {
     const allowedFields = {
         category_id: "category_id",
         name: "name",
@@ -166,27 +144,25 @@ const updateProduct = async (
         sku: "sku"
     };
 
+    if (!fields || fields.length === 0) {
+        throw new BadRequestError("No update fields provided");
+    }
+
     const invalidFields = fields.filter(
         field => !allowedFields[field]
     );
 
     if (invalidFields.length > 0) {
-        throw new Error(
+        throw new BadRequestError(
             `Invalid update fields: ${invalidFields.join(", ")}`
         );
     }
 
     const setQuery = fields
-        .map(
-            (field, index) =>
-                `${allowedFields[field]} = $${index + 1}`
-        )
+        .map((field, index) => `${allowedFields[field]} = $${index + 1}`)
         .join(", ");
 
-    const values = fields.map(
-        field => updates[field]
-    );
-
+    const values = fields.map(field => updates[field]);
     values.push(id);
 
     const result = await pool.query(
@@ -199,6 +175,10 @@ const updateProduct = async (
          RETURNING *`,
         values
     );
+
+    if (!result.rows[0]) {
+        throw new NotFoundError("Product not found")
+    }
 
     return result.rows[0];
 };
@@ -214,6 +194,10 @@ const deleteProduct = async (id) => {
          RETURNING *`,
         [id]
     );
+    
+    if (!result.rows[0]) {
+        throw new NotFoundError("Product not found")
+    }
 
     return result.rows[0];
 };

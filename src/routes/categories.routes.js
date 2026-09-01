@@ -7,7 +7,9 @@ import {
     createCategorySchema,
     updateCategorySchema
 } from "../validators/categories.validator.js";
-import { productsQuerySchema } from "../validators/pagination.validation.js";
+import {
+    categoriesQuerySchema
+} from "../validators/pagination.validation.js";
 
 const categoriesRouter = express.Router();
 
@@ -16,7 +18,7 @@ const categoriesRouter = express.Router();
  * /categories:
  *   get:
  *     summary: Get all categories
- *     description: Get all categories with pagination.
+ *     description: Get categories with pagination and optional name search.
  *     parameters:
  *       - in: query
  *         name: page
@@ -24,8 +26,6 @@ const categoriesRouter = express.Router();
  *           type: integer
  *           minimum: 1
  *           default: 1
- *         description: Page number
- *
  *       - in: query
  *         name: limit
  *         schema:
@@ -33,17 +33,24 @@ const categoriesRouter = express.Router();
  *           minimum: 1
  *           maximum: 100
  *           default: 20
- *         description: Number of categories per page
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         description: Search categories by name
  *
  *     responses:
  *       200:
  *         description: Categories retrieved successfully
- *       400:
- *         description: Invalid query parameters
+ *       422:
+ *         description: Validation failed
  */
 categoriesRouter.get(
     "/categories",
-    validate(productsQuerySchema, "query"),
+    validate(
+        categoriesQuerySchema,
+        "query"
+    ),
     categoryController.getAllCategories
 );
 
@@ -59,7 +66,6 @@ categoriesRouter.get(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Category ID
  *
  *     responses:
  *       200:
@@ -126,18 +132,6 @@ categoriesRouter.post(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Category ID
- *
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: Computers
  *
  *     responses:
  *       200:
@@ -176,10 +170,9 @@ categoriesRouter.patch(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Category ID
  *
  *     responses:
- *       204:
+ *       200:
  *         description: Category deleted successfully
  *       401:
  *         description: Unauthorized

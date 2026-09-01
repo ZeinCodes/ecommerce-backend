@@ -4,10 +4,14 @@ const getOrders = async (req, res, next) => {
     try {
         const { id } = req.params;
         const userId = req.user.id;
-        const { page, limit } = req.validated.query;
+        const userRole = req.user.role;
 
         if (id) {
-            const order = await ordersService.getOrdersById(id, userId);
+            const order = await ordersService.getOrdersById(
+                id,
+                userId,
+                userRole
+            );
 
             return res.status(200).json({
                 message: "Order",
@@ -16,13 +20,18 @@ const getOrders = async (req, res, next) => {
             });
         }
 
-        const result = await ordersService.getOrders(userId, page, limit);
+        const { page, limit } = req.validated.query;
 
-        const totalPages = Math.ceil(
-            result.total / limit
-        )
-        
-        res.status(200).json({
+        const result = await ordersService.getOrders(
+            userId,
+            userRole,
+            page,
+            limit
+        );
+
+        const totalPages = Math.ceil(result.total / limit);
+
+        return res.status(200).json({
             success: true,
             result: result.orders,
             pagination: {
@@ -43,14 +52,15 @@ const getOrderItems = async (req, res, next) => {
     try {
         const { id } = req.params;
         const userId = req.user.id;
+        const userRole = req.user.role;
 
-        const items =
-            await ordersService.getOrderItems(
-                id,
-                userId
-            );
+        const items = await ordersService.getOrderItems(
+            id,
+            userId,
+            userRole
+        );
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Items",
             success: true,
             items
@@ -63,15 +73,14 @@ const getOrderItems = async (req, res, next) => {
 const createOrder = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const { items } = req.body;
+        const { items } = req.validated.body;
 
-        const order =
-            await ordersService.createOrder(
-                userId,
-                items
-            );
+        const order = await ordersService.createOrder(
+            userId,
+            items
+        );
 
-        res.status(201).json({
+        return res.status(201).json({
             message: "Order created",
             success: true,
             order
@@ -84,15 +93,14 @@ const createOrder = async (req, res, next) => {
 const updateOrderStatus = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
+        const { status } = req.validated.body;
 
-        const order =
-            await ordersService.updateOrderStatus(
-                id,
-                status
-            );
+        const order = await ordersService.updateOrderStatus(
+            id,
+            status
+        );
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Order updated",
             success: true,
             order

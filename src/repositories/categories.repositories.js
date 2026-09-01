@@ -1,31 +1,72 @@
 import pool from "../db/database.js";
 
-const findAllCategories = async (page, limit) => {
+const findAllCategories = async (
+    page,
+    limit,
+    name
+) => {
     const offset = (page - 1) * limit;
-    
-    const categoriesResult = await pool.query(
-        `SELECT *
-         FROM categories
-         WHERE deleted_at IS NULL
-         ORDER BY created_at DESC, id DESC
-         LIMIT $1
-         OFFSET $2`,
-        [limit, offset]
-    );
 
-    const countResult = await pool.query(
-        `SELECT COUNT(*)
-         FROM categories
-         WHERE deleted_at IS NULL`
-    )
+    const conditions = [
+        "deleted_at IS NULL"
+    ];
+
+    const values = [];
+
+    if (name) {
+        values.push(`%${name}%`);
+
+        conditions.push(
+            `name ILIKE $${values.length}`
+        );
+    }
+
+    const whereClause =
+        conditions.join(" AND ");
+
+    const limitPlaceholder =
+        values.length + 1;
+
+    const offsetPlaceholder =
+        values.length + 2;
+
+    const categoriesResult =
+        await pool.query(
+            `SELECT *
+             FROM categories
+             WHERE ${whereClause}
+             ORDER BY created_at DESC, id DESC
+             LIMIT $${limitPlaceholder}
+             OFFSET $${offsetPlaceholder}`,
+            [
+                ...values,
+                limit,
+                offset
+            ]
+        );
+
+    const countResult =
+        await pool.query(
+            `SELECT COUNT(*)
+             FROM categories
+             WHERE ${whereClause}`,
+            values
+        );
 
     return {
-        categories: categoriesResult.rows,
-        total: Number(countResult.rows[0].count)
-    }
+        categories:
+            categoriesResult.rows,
+
+        total:
+            Number(
+                countResult.rows[0].count
+            )
+    };
 };
 
-const findCategoryById = async (id) => {
+const findCategoryById = async (
+    id
+) => {
     const result = await pool.query(
         `SELECT *
          FROM categories
@@ -37,19 +78,9 @@ const findCategoryById = async (id) => {
     return result.rows[0];
 };
 
-const findCategoryByName = async (name) => {
-    const result = await pool.query(
-        `SELECT *
-         FROM categories
-         WHERE name = $1
-         AND deleted_at IS NULL`,
-        [name]
-    );
-
-    return result.rows[0];
-};
-
-const addNewCategory = async (name) => {
+const addNewCategory = async (
+    name
+) => {
     const result = await pool.query(
         `INSERT INTO categories (name)
          VALUES ($1)
@@ -60,7 +91,10 @@ const addNewCategory = async (name) => {
     return result.rows[0];
 };
 
-const updateCategory = async (id, name) => {
+const updateCategory = async (
+    id,
+    name
+) => {
     const result = await pool.query(
         `UPDATE categories
          SET
@@ -69,13 +103,18 @@ const updateCategory = async (id, name) => {
          WHERE id = $2
          AND deleted_at IS NULL
          RETURNING *`,
-        [name, id]
+        [
+            name,
+            id
+        ]
     );
 
     return result.rows[0];
 };
 
-const deleteCategory = async (id) => {
+const deleteCategory = async (
+    id
+) => {
     const result = await pool.query(
         `UPDATE categories
          SET
@@ -93,7 +132,6 @@ const deleteCategory = async (id) => {
 const categoriesRepository = {
     findAllCategories,
     findCategoryById,
-    findCategoryByName,
     addNewCategory,
     updateCategory,
     deleteCategory

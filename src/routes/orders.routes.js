@@ -7,7 +7,9 @@ import {
 import authenticate from "../middlewares/authentication.js";
 import authorize from "../middlewares/authorization.js";
 import validate from "../middlewares/validate.js";
-import { productsQuerySchema } from "../validators/pagination.validation.js"
+import {
+    paginationSchema
+} from "../validators/pagination.validation.js";
 
 const ordersRouter = express.Router();
 
@@ -26,8 +28,6 @@ const ordersRouter = express.Router();
  *           type: integer
  *           minimum: 1
  *           default: 1
- *         description: Page number
- *
  *       - in: query
  *         name: limit
  *         schema:
@@ -35,20 +35,22 @@ const ordersRouter = express.Router();
  *           minimum: 1
  *           maximum: 100
  *           default: 20
- *         description: Number of orders per page
  *
  *     responses:
  *       200:
  *         description: Orders retrieved successfully
- *       400:
- *         description: Invalid query parameters
  *       401:
  *         description: Unauthorized
+ *       422:
+ *         description: Validation failed
  */
 ordersRouter.get(
     "/orders",
     authenticate,
-    validate(productsQuerySchema, "query"),
+    validate(
+        paginationSchema,
+        "query"
+    ),
     ordersController.getOrders
 );
 
@@ -66,7 +68,6 @@ ordersRouter.get(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Order ID
  *
  *     responses:
  *       200:
@@ -96,7 +97,6 @@ ordersRouter.get(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Order ID
  *
  *     responses:
  *       200:
@@ -131,7 +131,6 @@ ordersRouter.get(
  *               items:
  *                 type: array
  *                 minItems: 1
- *                 description: Products included in the order
  *                 items:
  *                   type: object
  *                   required:
@@ -141,11 +140,9 @@ ordersRouter.get(
  *                     product_id:
  *                       type: string
  *                       format: uuid
- *                       example: 9117b9b1-b7ea-4c4a-8eb3-bc046425b681
  *                     quantity:
  *                       type: integer
  *                       minimum: 1
- *                       example: 2
  *
  *     responses:
  *       201:
@@ -180,7 +177,6 @@ ordersRouter.post(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Order ID
  *
  *     requestBody:
  *       required: true
@@ -199,11 +195,12 @@ ordersRouter.post(
  *                   - shipped
  *                   - delivered
  *                   - cancelled
- *                 example: shipped
  *
  *     responses:
  *       200:
  *         description: Order status updated successfully
+ *       400:
+ *         description: Invalid status transition
  *       401:
  *         description: Unauthorized
  *       403:

@@ -2,71 +2,89 @@ import ordersRepository from "../repositories/orders.repository.js";
 import NotFoundError from "../errors/NotFoundError.js";
 import BadRequestError from "../errors/BadRequestError.js";
 
-const getOrders = async (userId, page, limit) => {
-    return ordersRepository.getOrders(userId, page, limit);
+const getOrders = async (
+    userId,
+    userRole,
+    page,
+    limit
+) => {
+    return ordersRepository.getOrders(
+        userId,
+        userRole,
+        page,
+        limit
+    );
 };
 
-const getOrdersById = async (id, userId) => {
-    const result = await ordersRepository.getOrdersById(
-        id,
-        userId
-    );
+const getOrdersById = async (
+    id,
+    userId,
+    userRole
+) => {
+    const result =
+        await ordersRepository.getOrdersById(
+            id,
+            userId,
+            userRole
+        );
 
     if (!result) {
-        throw new NotFoundError("Order not found");
+        throw new NotFoundError(
+            "Order not found"
+        );
     }
 
     return result;
 };
 
-const getOrderItems = async (id, userId) => {
-    const order = await ordersRepository.getOrdersById(
-        id,
-        userId
-    );
+const getOrderItems = async (
+    id,
+    userId,
+    userRole
+) => {
+    const order =
+        await ordersRepository.getOrdersById(
+            id,
+            userId,
+            userRole
+        );
 
     if (!order) {
-        throw new NotFoundError("Order not found");
+        throw new NotFoundError(
+            "Order not found"
+        );
     }
 
-    return await ordersRepository.getOrderItems(
+    return ordersRepository.getOrderItems(
         id,
-        userId
+        userId,
+        userRole
     );
 };
 
-const createOrder = async (userId, items) => {
-    try {
-        return await ordersRepository.createOrder(
-            userId,
-            items
-        );
-    } catch (error) {
-        if (
-            error.message ===
-            "One or more products not found"
-        ) {
-            throw new NotFoundError(error.message);
-        }
-
-        if (
-            error.message.startsWith(
-                "Insufficient stock for product"
-            )
-        ) {
-            throw new BadRequestError(error.message);
-        }
-
-        throw error;
-    }
+const createOrder = async (
+    userId,
+    items
+) => {
+    return ordersRepository.createOrder(
+        userId,
+        items
+    );
 };
 
-const updateOrderStatus = async (id, status) => {
+const updateOrderStatus = async (
+    id,
+    status
+) => {
     const currentOrder =
-        await ordersRepository.getOrderByIdForStatus(id);
+        await ordersRepository.getOrderByIdForStatus(
+            id
+        );
 
     if (!currentOrder) {
-        throw new NotFoundError("Order not found");
+        throw new NotFoundError(
+            "Order not found"
+        );
     }
 
     const allowedTransitions = {
@@ -89,21 +107,34 @@ const updateOrderStatus = async (id, status) => {
         cancelled: []
     };
 
+    const validTransitions =
+        allowedTransitions[
+            currentOrder.status
+        ];
+
     if (
-        !allowedTransitions[currentOrder.status].includes(status)
+        !validTransitions ||
+        !validTransitions.includes(status)
     ) {
         throw new BadRequestError(
             `Cannot change order status from ${currentOrder.status} to ${status}`
         );
     }
 
-    const result =
+    const updatedOrder =
         await ordersRepository.updateOrderStatus(
             id,
-            status
+            status,
+            currentOrder.status
         );
 
-    return result;
+    if (!updatedOrder) {
+        throw new BadRequestError(
+            "Order status changed before the update could be completed"
+        );
+    }
+
+    return updatedOrder;
 };
 
 const ordersService = {

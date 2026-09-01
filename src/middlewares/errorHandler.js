@@ -28,13 +28,11 @@ const errorHandler = (error, req, res, next) => {
 
     // PostgreSQL: invalid input syntax
     if (error.code === "22P02") {
-        return res.status(400).json({
+        return res.status(404).json({
             success: false,
-            message: "Invalid input"
+            message: "Resource not found"
         });
     }
-
-    console.error(error);
 
     return res.status(500).json({
         success: false,

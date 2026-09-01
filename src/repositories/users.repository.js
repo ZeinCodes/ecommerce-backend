@@ -1,37 +1,52 @@
 import pool from "../db/database.js";
+import BadRequestError from "../errors/BadRequestError.js";
 
-const findAllUsers = async (page, limit) => {
-    const offset = (page - 1)  * limit;
+const findAllUsers = async (
+    page,
+    limit
+) => {
+    const offset =
+        (page - 1) * limit;
 
-    const usersResult = await pool.query(
-        `SELECT
-            id,
-            name,
-            email,
-            role,
-            created_at,
-            updated_at
-         FROM users
-         WHERE deleted_at IS NULL
-         ORDER BY created_at DESC, id DESC
-         LIMIT $1
-         OFFSET $2`,
-         [limit, offset]
-    );
+    const usersResult =
+        await pool.query(
+            `SELECT
+                id,
+                name,
+                email,
+                role,
+                created_at,
+                updated_at
+             FROM users
+             WHERE deleted_at IS NULL
+             ORDER BY created_at DESC, id DESC
+             LIMIT $1
+             OFFSET $2`,
+            [
+                limit,
+                offset
+            ]
+        );
 
-    const countResult = await pool.query(
-        `SELECT COUNT(*)
-         FROM users
-         WHERE deleted_at IS NULL`
-    )
+    const countResult =
+        await pool.query(
+            `SELECT COUNT(*)
+             FROM users
+             WHERE deleted_at IS NULL`
+        );
 
     return {
         users: usersResult.rows,
-        total: Number(countResult.rows[0].count)
+        total:
+            Number(
+                countResult.rows[0].count
+            )
     };
 };
 
-const findUserById = async (id) => {
+const findUserById = async (
+    id
+) => {
     const result = await pool.query(
         `SELECT
             id,
@@ -80,59 +95,76 @@ const addNewUser = async (
     return result.rows[0];
 };
 
-const updateUser = async (updates, id) => {
+const updateUser = async (
+    updates,
+    id
+) => {
     const allowedFields = {
         name: "name",
         email: "email",
         password: "password_hash"
     };
 
-    const fields = Object.keys(updates);
+    const fields =
+        Object.keys(updates);
 
-    const invalidFields = fields.filter(
-        field => !allowedFields[field]
-    );
+    if (fields.length === 0) {
+        throw new BadRequestError(
+            "No update fields provided"
+        );
+    }
+
+    const invalidFields =
+        fields.filter(
+            field =>
+                !allowedFields[field]
+        );
 
     if (invalidFields.length > 0) {
-        throw new Error(
+        throw new BadRequestError(
             `Invalid update fields: ${invalidFields.join(", ")}`
         );
     }
-    
-    const setQuery = fields
-        .map(
-            (field, index) =>
-                `${allowedFields[field]} = $${index + 1}`
-        )
-        .join(", ");
 
-    const values = fields.map(
-        field => updates[field]
-    );
+    const setQuery =
+        fields
+            .map(
+                (field, index) =>
+                    `${allowedFields[field]} = $${index + 1}`
+            )
+            .join(", ");
+
+    const values =
+        fields.map(
+            field => updates[field]
+        );
 
     values.push(id);
 
-    const result = await pool.query(
-        `UPDATE users
-         SET
-            ${setQuery},
-            updated_at = NOW()
-         WHERE id = $${values.length}
-         AND deleted_at IS NULL
-         RETURNING
-            id,
-            name,
-            email,
-            role,
-            created_at,
-            updated_at`,
-        values
-    );
+    const result =
+        await pool.query(
+            `UPDATE users
+             SET
+                ${setQuery},
+                updated_at = NOW()
+             WHERE id = $${values.length}
+             AND deleted_at IS NULL
+             RETURNING
+                id,
+                name,
+                email,
+                role,
+                created_at,
+                updated_at`,
+            values
+        );
 
     return result.rows[0];
 };
 
-const deleteUser = async (id) => {
+const deleteUser = async (
+    id
+) => {
     const result = await pool.query(
         `UPDATE users
          SET
@@ -153,7 +185,9 @@ const deleteUser = async (id) => {
     return result.rows[0];
 };
 
-const findUserByEmail = async (email) => {
+const findUserByEmail = async (
+    email
+) => {
     const result = await pool.query(
         `SELECT
             id,

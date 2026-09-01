@@ -1,3 +1,4 @@
+// File: src/middlewares/ownership.js
 import ForbiddenError from "../errors/ForbiddenError.js";
 
 const authorizeOwner = () => {
@@ -5,11 +6,15 @@ const authorizeOwner = () => {
         try {
             const user = req.user;
 
+            if (!user) {
+                throw new ForbiddenError("User information is missing");
+            }
+
             if (user.role === "admin") {
                 return next();
             }
 
-            if (user.role === "user" && user.id === req.params.id) {
+            if (user.role === "user" && String(user.id) === String(req.params.id)) {
                 return next();
             }
 

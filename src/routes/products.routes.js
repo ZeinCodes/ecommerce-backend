@@ -7,7 +7,9 @@ import {
     createProductSchema,
     updateProductSchema
 } from "../validators/products.validator.js";
-import { productsQuerySchema } from "../validators/pagination.validation.js";
+import {
+    productsQuerySchema
+} from "../validators/pagination.validation.js";
 
 const productsRouter = express.Router();
 
@@ -22,72 +24,71 @@ const productsRouter = express.Router();
  *         name: page
  *         schema:
  *           type: integer
+ *           minimum: 1
  *           default: 1
- *         description: Page number
  *
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
- *           default: 20
+ *           minimum: 1
  *           maximum: 100
- *         description: Number of products per page
+ *           default: 20
  *
  *       - in: query
  *         name: category_id
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Filter products by category
  *
  *       - in: query
  *         name: min_price
  *         schema:
  *           type: number
  *           minimum: 0
- *         description: Minimum product price
  *
  *       - in: query
  *         name: max_price
  *         schema:
  *           type: number
  *           minimum: 0
- *         description: Maximum product price
  *
  *       - in: query
  *         name: name
  *         schema:
  *           type: string
- *         description: Search products by name
  *
  *       - in: query
  *         name: sortBy
  *         schema:
  *           type: string
- *           enum: [name, price, created_at]
- *         description: Field used for sorting
+ *           enum:
+ *             - created_at
+ *             - name
+ *             - price
+ *             - stock
  *
  *       - in: query
  *         name: order
  *         schema:
  *           type: string
- *           enum: [asc, desc]
+ *           enum:
+ *             - asc
+ *             - desc
  *           default: desc
- *         description: Sort direction
  *
  *     responses:
  *       200:
  *         description: Products retrieved successfully
- *
- *       400:
- *         description: Invalid query parameters
- *
  *       422:
  *         description: Validation failed
  */
 productsRouter.get(
     "/products",
-    validate(productsQuerySchema, "query"),
+    validate(
+        productsQuerySchema,
+        "query"
+    ),
     productsController.getAllProducts
 );
 
@@ -103,6 +104,7 @@ productsRouter.get(
  *         schema:
  *           type: string
  *           format: uuid
+ *
  *     responses:
  *       200:
  *         description: Product retrieved successfully
@@ -143,11 +145,11 @@ productsRouter.get(
  *                 type: string
  *               price:
  *                 type: number
- *                 format: double
  *               stock:
  *                 type: integer
  *               sku:
  *                 type: string
+ *
  *     responses:
  *       201:
  *         description: Product created successfully
@@ -157,6 +159,8 @@ productsRouter.get(
  *         description: Forbidden
  *       409:
  *         description: Conflict
+ *       422:
+ *         description: Validation failed
  */
 productsRouter.post(
     "/products",
@@ -180,27 +184,7 @@ productsRouter.post(
  *         schema:
  *           type: string
  *           format: uuid
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               category_id:
- *                 type: string
- *                 format: uuid
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *                 format: double
- *               stock:
- *                 type: integer
- *               sku:
- *                 type: string
+ *
  *     responses:
  *       200:
  *         description: Product updated successfully
@@ -212,6 +196,8 @@ productsRouter.post(
  *         description: Product not found
  *       409:
  *         description: Conflict
+ *       422:
+ *         description: Validation failed
  */
 productsRouter.patch(
     "/products/:id",
@@ -226,6 +212,7 @@ productsRouter.patch(
  * /products/{id}:
  *   delete:
  *     summary: Delete product
+ *     description: Soft delete a product.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -235,6 +222,7 @@ productsRouter.patch(
  *         schema:
  *           type: string
  *           format: uuid
+ *
  *     responses:
  *       200:
  *         description: Product deleted successfully

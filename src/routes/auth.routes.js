@@ -1,9 +1,19 @@
 import express from "express";
 import validate from "../middlewares/validate.js";
+import rateLimit from "express-rate-limit";
 import * as authController from "../controllers/auth.controller.js";
 import { loginSchema } from "../validators/users.validator.js";
 
 const authRouter = express.Router();
+
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: {
+        success: false,
+        message: "Too many login attempts, please try again later"
+    }
+})
 
 /**
  * @swagger
@@ -56,6 +66,7 @@ const authRouter = express.Router();
  */
 authRouter.post(
     "/auth/login",
+    loginLimiter,
     validate(loginSchema),
     authController.userLogin
 );
