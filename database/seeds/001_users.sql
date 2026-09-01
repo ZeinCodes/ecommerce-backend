@@ -1,14 +1,21 @@
-INSERT into users(name, email, password_hash, role) 
+-- database/seeds/001_users.sql
+
+INSERT INTO users (
+    name,
+    email,
+    password_hash,
+    role
+)
 VALUES
 (
-    'Zein', 
-    'zein@gmail.com',
-    'h3i@u83=28@332',
+    'Admin User',
+    'admin@example.com',
+    '$2b$12$LQv3c1yqBWVHxkd0L8mQeO5J5Y8ZJ5J5Y8ZJ5Y8ZJ5Y8ZJ5Y8ZJ5',
     'admin'
 ),
 (
-    'Ali',
-    'ali@gmail.com',
-    'h2d823dih8e@h',
+    'Test User',
+    'user@example.com',
+    '$2b$12$LQv3c1yqBWVHxkd0L8mQeO5J5Y8ZJ5J5Y8ZJ5Y8ZJ5Y8ZJ5',
     'user'
 );
