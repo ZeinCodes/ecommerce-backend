@@ -10,7 +10,7 @@ async function startServer() {
         console.log("Database connected");
 
         app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}`);
+            console.log(`Server running on http://localhost:${PORT}/api-reference`);
         });
     } catch (error) {
         console.error("Database failed to connect");
