@@ -11,6 +11,40 @@ import { productsQuerySchema } from "../validators/pagination.validation.js"
 
 const ordersRouter = express.Router();
 
+/**
+ * @swagger
+ * /orders:
+ *   get:
+ *     summary: Get orders
+ *     description: Get orders with pagination.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Number of orders per page
+ *
+ *     responses:
+ *       200:
+ *         description: Orders retrieved successfully
+ *       400:
+ *         description: Invalid query parameters
+ *       401:
+ *         description: Unauthorized
+ */
 ordersRouter.get(
     "/orders",
     authenticate,
@@ -18,18 +52,113 @@ ordersRouter.get(
     ordersController.getOrders
 );
 
+/**
+ * @swagger
+ * /orders/{id}:
+ *   get:
+ *     summary: Get order by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Order ID
+ *
+ *     responses:
+ *       200:
+ *         description: Order retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Order not found
+ */
 ordersRouter.get(
     "/orders/:id",
     authenticate,
     ordersController.getOrders
 );
 
+/**
+ * @swagger
+ * /orders/{id}/items:
+ *   get:
+ *     summary: Get order items
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Order ID
+ *
+ *     responses:
+ *       200:
+ *         description: Order items retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Order not found
+ */
 ordersRouter.get(
     "/orders/:id/items",
     authenticate,
     ordersController.getOrderItems
 );
 
+/**
+ * @swagger
+ * /orders:
+ *   post:
+ *     summary: Create a new order
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - items
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 minItems: 1
+ *                 description: Products included in the order
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - product_id
+ *                     - quantity
+ *                   properties:
+ *                     product_id:
+ *                       type: string
+ *                       format: uuid
+ *                       example: 9117b9b1-b7ea-4c4a-8eb3-bc046425b681
+ *                     quantity:
+ *                       type: integer
+ *                       minimum: 1
+ *                       example: 2
+ *
+ *     responses:
+ *       201:
+ *         description: Order created successfully
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Product not found
+ *       422:
+ *         description: Validation failed
+ */
 ordersRouter.post(
     "/orders",
     authenticate,
@@ -37,6 +166,53 @@ ordersRouter.post(
     ordersController.createOrder
 );
 
+/**
+ * @swagger
+ * /orders/{id}/status:
+ *   patch:
+ *     summary: Update order status
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Order ID
+ *
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum:
+ *                   - pending
+ *                   - processing
+ *                   - shipped
+ *                   - delivered
+ *                   - cancelled
+ *                 example: shipped
+ *
+ *     responses:
+ *       200:
+ *         description: Order status updated successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Order not found
+ *       422:
+ *         description: Validation failed
+ */
 ordersRouter.patch(
     "/orders/:id/status",
     authenticate,
