@@ -16,13 +16,27 @@ import errorHandler from "./middlewares/errorHandler.js";
 
 const app = express();
 
-app.use(helmet())
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+                styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+                imgSrc: ["'self'", "data:", "https:"],
+                fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+                connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
+                workerSrc: ["'self'", "blob:"]
+            }
+        }
+    })
+);
 
 app.use(express.json());
 
 app.use(authRouter);
 app.use(usersRouter);
-app.use(categoriesRouter);
+app.use(categoriesRouter); 
 app.use(productsRouter);
 app.use(ordersRouter);
 
