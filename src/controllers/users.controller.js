@@ -2,17 +2,21 @@ import * as userService from "../services/users.service.js";
 
 const getAllUsers = async (req, res, next) => {
     try {
-        const { page, limit } = req.validated.query;
+        const {
+            page,
+            limit
+        } = req.validated.query;
 
         const result = await userService.getUsers(
-            page, limit
+            page,
+            limit
         );
 
         const totalPages = Math.ceil(
             result.total / limit
-        )
+        );
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             result: result.users,
             pagination: {
@@ -35,7 +39,7 @@ const getUserById = async (req, res, next) => {
 
         const user = await userService.getUserById(id);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             user
         });
@@ -51,7 +55,7 @@ const postUser = async (req, res, next) => {
             email,
             password,
             role
-        } = req.body;
+        } = req.validated.body;
 
         const user = await userService.postUser(
             name,
@@ -60,7 +64,7 @@ const postUser = async (req, res, next) => {
             role
         );
 
-        res.status(201).json({
+        return res.status(201).json({
             message: "New user created",
             success: true,
             user
@@ -73,14 +77,14 @@ const postUser = async (req, res, next) => {
 const patchUser = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
+        const updates = req.validated.body;
 
         const user = await userService.patchUser(
             updates,
             id
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "User updated",
             success: true,
             user
@@ -96,7 +100,7 @@ const deleteUser = async (req, res, next) => {
 
         await userService.deleteUser(id);
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "User has been deleted",
             success: true
         });

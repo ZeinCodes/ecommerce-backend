@@ -68,19 +68,11 @@ const patchProduct = async (fields, updates, id) => {
         id
     );
 
-    if (!result) {
-        throw new NotFoundError("Product not found");
-    }
-
     return result;
 };
 
 const deleteProduct = async (id) => {
     const result = await productsRepository.deleteProduct(id);
-
-    if (!result) {
-        throw new NotFoundError("Product not found");
-    }
 
     return result;
 };

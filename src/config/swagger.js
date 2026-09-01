@@ -3,11 +3,12 @@ import swaggerJSDoc from "swagger-jsdoc";
 const swaggerOption = {
     definition: {
         openapi: "3.0.0",
-        
+
         info: {
             title: "E-commerce API",
             version: "1.0.0",
-            description: "REST API fro an e-commerce application"
+            description:
+                "REST API for an e-commerce application"
         },
 
         components: {
@@ -26,6 +27,7 @@ const swaggerOption = {
             }
         ]
     },
+
     apis: [
         "src/routes/*.js"
     ],
@@ -33,6 +35,7 @@ const swaggerOption = {
     failOnErrors: true
 };
 
-const swaggerSpec = swaggerJSDoc(swaggerOption);
+const swaggerSpec =
+    swaggerJSDoc(swaggerOption);
 
 export default swaggerSpec;

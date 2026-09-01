@@ -8,7 +8,9 @@ import * as userController from "../controllers/users.controller.js";
 import authenticate from "../middlewares/authentication.js";
 import authorize from "../middlewares/authorization.js";
 import authorizeOwner from "../middlewares/ownership.js";
-import { productsQuerySchema } from "../validators/pagination.validation.js";
+import {
+    paginationSchema
+} from "../validators/pagination.validation.js";
 
 const usersRouter = express.Router();
 
@@ -27,8 +29,6 @@ const usersRouter = express.Router();
  *           type: integer
  *           minimum: 1
  *           default: 1
- *         description: Page number
- *
  *       - in: query
  *         name: limit
  *         schema:
@@ -36,23 +36,25 @@ const usersRouter = express.Router();
  *           minimum: 1
  *           maximum: 100
  *           default: 10
- *         description: Number of users per page
  *
  *     responses:
  *       200:
  *         description: Users retrieved successfully
- *       400:
- *         description: Invalid query parameters
  *       401:
  *         description: Unauthorized
  *       403:
  *         description: Forbidden
+ *       422:
+ *         description: Validation failed
  */
 usersRouter.get(
     "/users",
     authenticate,
     authorize("admin"),
-    validate(productsQuerySchema, "query"),
+    validate(
+        paginationSchema,
+        "query"
+    ),
     userController.getAllUsers
 );
 
@@ -70,7 +72,6 @@ usersRouter.get(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: User ID
  *
  *     responses:
  *       200:
@@ -85,7 +86,7 @@ usersRouter.get(
 usersRouter.get(
     "/users/:id",
     authenticate,
-    authorize("admin"),
+    authorizeOwner(),
     userController.getUserById
 );
 
@@ -110,30 +111,21 @@ usersRouter.get(
  *             properties:
  *               name:
  *                 type: string
- *                 example: John Doe
- *
  *               email:
  *                 type: string
  *                 format: email
- *                 example: john@example.com
- *
  *               password:
  *                 type: string
  *                 format: password
- *                 example: Password123
- *
  *               role:
  *                 type: string
  *                 enum:
  *                   - user
  *                   - admin
- *                 example: user
  *
  *     responses:
  *       201:
  *         description: User created successfully
- *       400:
- *         description: Bad request
  *       401:
  *         description: Unauthorized
  *       403:
@@ -165,41 +157,10 @@ usersRouter.post(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: User ID
- *
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 example: John Smith
- *
- *               email:
- *                 type: string
- *                 format: email
- *                 example: john.smith@example.com
- *
- *               password:
- *                 type: string
- *                 format: password
- *                 example: NewPassword123
- *
- *               role:
- *                 type: string
- *                 enum:
- *                   - user
- *                   - admin
- *                 example: user
  *
  *     responses:
  *       200:
  *         description: User updated successfully
- *       400:
- *         description: Bad request
  *       401:
  *         description: Unauthorized
  *       403:
@@ -234,10 +195,9 @@ usersRouter.patch(
  *         schema:
  *           type: string
  *           format: uuid
- *         description: User ID
  *
  *     responses:
- *       204:
+ *       200:
  *         description: User deleted successfully
  *       401:
  *         description: Unauthorized

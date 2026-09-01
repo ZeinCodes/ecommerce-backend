@@ -24,29 +24,10 @@ const getAllProducts = async (req, res, next) => {
             order
         );
 
-        const totalPages = Math.ceil(
-            result.total / limit
-        );
-
-        if (result.products.length === 0) {
-            return res.status(200).json({
-                success: true,
-                category_id,
-                result: "There are no products matching your search",
-                pagination: {
-                    page,
-                    limit,
-                    total: result.total,
-                    totalPages,
-                    hasNextPage: page < totalPages,
-                    hasPreviousPage: page > 1
-                }
-            });
-        }
+        const totalPages = Math.ceil(result.total / limit);
 
         return res.status(200).json({
             success: true,
-            category_id,
             result: result.products,
             pagination: {
                 page,
@@ -57,7 +38,6 @@ const getAllProducts = async (req, res, next) => {
                 hasPreviousPage: page > 1
             }
         });
-
     } catch (error) {
         next(error);
     }
@@ -69,7 +49,7 @@ const getProductById = async (req, res, next) => {
 
         const result = await productsService.getProductById(id);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             result
         });
@@ -87,7 +67,7 @@ const postProduct = async (req, res, next) => {
             price,
             stock,
             sku
-        } = req.body;
+        } = req.validated.body;
 
         const result = await productsService.postProduct(
             category_id,
@@ -98,7 +78,7 @@ const postProduct = async (req, res, next) => {
             sku
         );
 
-        res.status(201).json({
+        return res.status(201).json({
             message: "New product created",
             success: true,
             result
@@ -111,8 +91,7 @@ const postProduct = async (req, res, next) => {
 const patchProduct = async (req, res, next) => {
     try {
         const { id } = req.params;
-
-        const updates = req.body;
+        const updates = req.validated.body;
         const fields = Object.keys(updates);
 
         const result = await productsService.patchProduct(
@@ -121,7 +100,7 @@ const patchProduct = async (req, res, next) => {
             id
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Product updated",
             success: true,
             result
@@ -137,7 +116,7 @@ const deleteProduct = async (req, res, next) => {
 
         const result = await productsService.deleteProduct(id);
 
-        res.status(200).json({
+        return res.status(200).json({
             message: "Product has been deleted",
             success: true,
             result
