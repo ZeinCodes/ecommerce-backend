@@ -478,18 +478,23 @@ The API includes several security measures:
 
 ---
 
-# API Documentation
+## API Documentation
 
 The API is documented using **OpenAPI** and displayed through **Scalar**.
 
-After starting the server, open:
+Once the server is running, open the interactive docs at:
 
 ```text
-http://localhost:3000/api-docs
+https://ecommerce-backend-6bcwy5xbo-24lights.vercel.app/api-reference
 ```
 
-The documentation allows you to explore and test the available API endpoints.
+Or view the raw OpenAPI specification (JSON) at:
 
+```text
+https://ecommerce-backend-6bcwy5xbo-24lights.vercel.app/openapi.json
+```
+
+The documentation lets you browse all available endpoints, view request/response schemas, and send live test requests directly from the browser.
 ---
 
 # Development
