@@ -40,11 +40,15 @@ app.use(categoriesRouter);
 app.use(productsRouter);
 app.use(ordersRouter);
 
+app.get("/openapi.json", (req, res) => {
+  res.json(swaggerSpec);
+});
+
 app.use(
     "/api-reference",
     apiReference({
         spec: {
-            content: swaggerSpec
+            url: "/openapi.json"
         }
     })
 );
