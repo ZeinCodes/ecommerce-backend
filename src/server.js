@@ -10,7 +10,7 @@ async function startServer() {
         console.log("Database connected");
 
         app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}/api-reference`);
+            console.log(`Server running on https://ecommerce-backend-o97abd4cl-24lights.vercel.app/api-reference`);
         });
     } catch (error) {
         console.error("Database failed to connect");
