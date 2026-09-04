@@ -23,7 +23,7 @@ const swaggerOption = {
 
         servers: [
             {
-                url: "https://ecommerce-backend-o97abd4cl-24lights.vercel.app/api-reference"
+                url: "https://ecommerce-backend-o97abd4cl-24lights.vercel.app"
             }
         ]
     },
