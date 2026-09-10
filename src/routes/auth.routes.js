@@ -2,7 +2,10 @@ import express from "express";
 import validate from "../middlewares/validate.js";
 import rateLimit from "express-rate-limit";
 import * as authController from "../controllers/auth.controller.js";
-import { loginSchema } from "../validators/users.validator.js";
+import { 
+    loginSchema,
+    registerSchema
+} from "../validators/users.validator.js";
 
 const authRouter = express.Router();
 
@@ -14,6 +17,61 @@ const loginLimiter = rateLimit({
         message: "Too many login attempts, please try again later"
     }
 })
+
+const registerLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: {
+        success: false,
+        message: "Too many sign up attempts, please try again later"
+    }
+})
+
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: User registry
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string 
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 format: password
+ *
+ *     responses:
+ *       200:
+ *         description: Signed Up successfully
+ * 
+ *       400:
+ *         description: Bad request
+ *         
+ *       409: 
+ *         description: Conflict
+ *         
+ *       422:
+ *         description: Unprocessable Entity *         
+ */
+
+authRouter.post(
+    '/auth/register',
+    registerLimiter,
+    validate(registerSchema),
+    authController.userRegister
+)
 
 /**
  * @swagger

@@ -1,3 +1,37 @@
 {
-    "postman.settings.dotenv-detection-notification-visibility": false
+    "postman.settings.dotenv-detection-notification-visibility": false,
+    "typescript.tsc.autoDetectConfigFiles": false,
+
+    "search.exclude": {
+        "**/node_modules": true
+    },
+
+    "files.watcherExclude": {
+        "**/node_modules/**": true
+    },
+
+    // Formatting
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+    // Auto imports
+    "js/ts.suggest.autoImports": true,
+
+    // Update imports when files are moved/renamed
+    "js/ts.updateImportsOnFileMove.enabled": "always",
+    
+    // Suggestions
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": true
+    },
+
+    "editor.suggestSelection": "first",
+    "editor.acceptSuggestionOnEnter": "on",
+
+    // Organize imports
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    }
 }
