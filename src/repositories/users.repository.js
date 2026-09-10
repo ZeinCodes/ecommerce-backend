@@ -204,11 +204,38 @@ const findUserByEmail = async (
     return result.rows[0];
 };
 
+const registerUser = async (
+    name, 
+    email, 
+    passwordHash
+) => {
+    const role = "user";
+
+    const result = await pool.query(
+        `INSERT INTO users (
+            name,
+            email,
+            password_hash,
+            role
+        )
+        VALUES ($1, $2, $3, $4)
+        RETURNING
+            id, 
+            name,
+            email,
+            role,
+            created_at`,
+        [name, email, passwordHash, role]
+    )
+    return result.rows[0];
+}
+
 export {
     findAllUsers,
     findUserById,
     addNewUser,
     updateUser,
     deleteUser,
-    findUserByEmail
+    findUserByEmail,
+    registerUser
 };
