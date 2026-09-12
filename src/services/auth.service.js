@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import UnauthorizedError from "../errors/UnauthorizedError.js";
+import ConflictError from "../errors/ConflictError.js";
 import * as authRepository from "../repositories/users.repository.js";
 import { generateToken } from "../utils/jwt.js";
 
@@ -33,14 +34,14 @@ const login = async (email, password) => {
 };
 
 const register = async (name, email, password) => {
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const existingUser = authRepository.findUserByEmail(email);
-
+    const existingUser = await authRepository.findUserByEmail(email);
+    
     if (existingUser) {
         throw new ConflictError("Email is already registered");    
     }
-
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+ 
     const user = await authRepository.registerUser(
         name,
         email,
