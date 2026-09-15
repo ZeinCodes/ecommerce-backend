@@ -63,12 +63,10 @@ const getOrderItems = async (
 };
 
 const createOrder = async (
-    userId,
-    items
+    userId
 ) => {
     return ordersRepository.createOrder(
-        userId,
-        items
+        userId
     );
 };
 
