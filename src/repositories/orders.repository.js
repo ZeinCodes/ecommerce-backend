@@ -124,17 +124,34 @@ const getOrderItems = async (
 };
 
 const createOrder = async (
-    userId,
-    items
+    userId
 ) => {
     const client = await pool.connect();
 
     try {
         await client.query("BEGIN");
 
+        const cartResult = await client.query(
+            `SELECT
+                product_id,
+                quantity
+             FROM cart_items
+             WHERE user_id = $1
+             AND deleted_at IS NULL
+             ORDER BY product_id
+             FOR UPDATE`,
+            [userId]
+        );
+
+        const cartItems = cartResult.rows;
+
+        if (cartItems.length === 0) {
+            throw new BadRequestError("Cart is empty");
+        }
+
         const uniqueProductIds = [
             ...new Set(
-                items.map(
+                cartItems.map(
                     item => item.product_id
                 )
             )
@@ -166,7 +183,7 @@ const createOrder = async (
 
         const quantityMap = {};
 
-        for (const item of items) {
+        for (const item of cartItems) {
             quantityMap[item.product_id] =
                 (quantityMap[item.product_id] || 0) +
                 item.quantity;
@@ -188,7 +205,7 @@ const createOrder = async (
 
         let totalPrice = 0;
 
-        for (const item of items) {
+        for (const item of cartItems) {
             const product = products.find(
                 product =>
                     product.id === item.product_id
@@ -214,7 +231,7 @@ const createOrder = async (
 
         const order = orderResult.rows[0];
 
-        for (const item of items) {
+        for (const item of cartItems) {
             const product = products.find(
                 product =>
                     product.id === item.product_id
@@ -250,6 +267,16 @@ const createOrder = async (
                 ]
             );
         }
+
+        await client.query(
+            `UPDATE cart_items
+             SET
+                deleted_at = NOW(),
+                updated_at = NOW()
+             WHERE user_id = $1
+             AND deleted_at IS NULL`,
+            [userId]
+        );
 
         await client.query("COMMIT");
 
