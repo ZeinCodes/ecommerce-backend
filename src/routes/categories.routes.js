@@ -18,6 +18,7 @@ const categoriesRouter = express.Router();
  * /categories:
  *   get:
  *     summary: Get all categories
+ *     tags: [Categories]
  *     description: Get categories with pagination and optional name search.
  *     parameters:
  *       - in: query
@@ -59,6 +60,7 @@ categoriesRouter.get(
  * /categories/{id}:
  *   get:
  *     summary: Get category by ID
+ *     tags: [Categories]
  *     parameters:
  *       - in: path
  *         name: id
@@ -83,6 +85,7 @@ categoriesRouter.get(
  * /categories:
  *   post:
  *     summary: Create a new category
+ *     tags: [Categories]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -123,6 +126,7 @@ categoriesRouter.post(
  * /categories/{id}:
  *   patch:
  *     summary: Update a category
+ *     tags: [Categories]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -160,6 +164,7 @@ categoriesRouter.patch(
  * /categories/{id}:
  *   delete:
  *     summary: Delete a category
+ *     tags: [Categories]
  *     description: Soft delete a category.
  *     security:
  *       - bearerAuth: []

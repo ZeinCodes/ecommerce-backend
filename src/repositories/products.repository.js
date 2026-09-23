@@ -1,6 +1,7 @@
 import pool from "../db/database.js";
 import BadRequestError from "../errors/BadRequestError.js";
 import NotFoundError from "../errors/NotFoundError.js";
+import fs from "node:fs/promises";
 
 const findAllProducts = async (
     page = 1,
@@ -202,13 +203,83 @@ const deleteProduct = async (id) => {
     return result.rows[0];
 };
 
+const getImages = async (productId) => {
+    const result = await pool.query(
+        `SELECT 
+            id,
+            image_url
+         FROM product_images
+         WHERE product_id = $1`,
+        [productId]
+    )
+    return result.rows;
+}
+
+const findImageById = async (productId, imageId) => {
+    const result = await pool.query(
+        `SELECT 
+            id,
+            image_url
+         FROM product_images
+         WHERE id = $1
+         AND product_id = $2`,
+        [imageId, productId]
+    )
+    return result.rows[0];
+}
+
+const postImages = async (productId, files) => {
+    const imageUrls = files.map((file) => `/uploads/${file.filename}`);
+
+    const placeholders = imageUrls.map((_, index) => {
+        return `($1, $${index + 2})`;
+    });
+
+    const values = [productId, ...imageUrls];
+
+    const result = await pool.query(
+        `INSERT INTO product_images (
+            product_id,
+            image_url
+         )
+         VALUES ${placeholders.join(", ")}
+         RETURNING *`,
+        values
+    );
+
+    return result.rows;
+};
+
+const deleteImage = async (productId, imageId) => {
+    const image = await findImageById(productId, imageId);
+
+    if (!image) {
+        return null;
+    }
+
+    await fs.unlink(`.${image.image_url}`);
+
+    await pool.query(
+        `DELETE FROM product_images
+         WHERE product_id = $1
+         AND id = $2`,
+        [productId, imageId]
+    )
+
+    return image;
+};
+
 const productsRepository = {
     findAllProducts,
     findProductById,
     findProductByName,
     addNewProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    getImages,
+    findImageById,
+    postImages,
+    deleteImage
 };
 
 export default productsRepository;

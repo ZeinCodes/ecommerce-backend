@@ -30,7 +30,12 @@ const getProductById = async (id) => {
         throw new NotFoundError("Product not found");
     }
 
-    return result;
+    const images = await productsRepository.getImages(id);
+
+    return {
+        ...result,
+        images
+    };
 };
 
 const getProductByName = async (name) => {
@@ -77,13 +82,40 @@ const deleteProduct = async (id) => {
     return result;
 };
 
+const getProductImages = async (productId) => {
+    const result = await productsRepository.getImages(
+        productId
+    )
+
+    return result;
+} 
+
+const addImageToProduct = async (productId, files) => {
+    const result = await productsRepository.postImages(
+        productId, 
+        files
+    );
+    return result;
+}
+
+const deleteProductImage = async (productId, imageId) => {
+    const result = await productsRepository.deleteImage(
+        productId,
+        imageId
+    )
+    return result;
+}
+
 const productsService = {
     getAllProducts,
     getProductById,
     getProductByName,
     postProduct,
     patchProduct,
-    deleteProduct
+    deleteProduct,
+    getProductImages,
+    addImageToProduct,
+    deleteProductImage
 };
 
 export default productsService;

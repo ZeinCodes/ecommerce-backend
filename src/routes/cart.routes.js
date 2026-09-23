@@ -14,6 +14,7 @@ const cartRouter = express.Router();
  * /cart:
  *   get:
  *     summary: Get current user's cart
+ *     tags: [Cart]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -33,6 +34,7 @@ cartRouter.get(
  * /cart/items:
  *   post:
  *     summary: Add a product to the cart
+ *     tags: [Cart]
  *     description: If the product is already in the cart, its quantity is incremented instead of creating a duplicate row.
  *     security:
  *       - bearerAuth: []
@@ -77,6 +79,7 @@ cartRouter.post(
  * /cart/items/{id}:
  *   patch:
  *     summary: Update a cart item's quantity
+ *     tags: [Cart]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -123,6 +126,7 @@ cartRouter.patch(
  * /cart/items/{id}:
  *   delete:
  *     summary: Remove an item from the cart
+ *     tags: [Cart]
  *     security:
  *       - bearerAuth: []
  *     parameters:

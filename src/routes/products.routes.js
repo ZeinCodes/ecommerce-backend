@@ -10,6 +10,7 @@ import {
 import {
     productsQuerySchema
 } from "../validators/pagination.validation.js";
+import upload from "../middlewares/upload.js";
 
 const productsRouter = express.Router();
 
@@ -18,6 +19,7 @@ const productsRouter = express.Router();
  * /products:
  *   get:
  *     summary: Get all products
+ *     tags: [Products]
  *     description: Get products with pagination, filtering, searching and sorting.
  *     parameters:
  *       - in: query
@@ -97,6 +99,7 @@ productsRouter.get(
  * /products/{id}:
  *   get:
  *     summary: Get product by id
+ *     tags: [Products]
  *     parameters:
  *       - in: path
  *         name: id
@@ -121,6 +124,7 @@ productsRouter.get(
  * /products:
  *   post:
  *     summary: Add a product
+ *     tags: [Products]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -175,6 +179,7 @@ productsRouter.post(
  * /products/{id}:
  *   patch:
  *     summary: Update a product
+ *     tags: [Products]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -212,6 +217,7 @@ productsRouter.patch(
  * /products/{id}:
  *   delete:
  *     summary: Delete product
+ *     tags: [Products]
  *     description: Soft delete a product.
  *     security:
  *       - bearerAuth: []
@@ -238,6 +244,128 @@ productsRouter.delete(
     authenticate,
     authorize("admin"),
     productsController.deleteProduct
+);
+
+/**
+ * @swagger
+ * /products/{productId}/images:
+ *   get:
+ *     summary: Get all images for a product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Product ID
+ *     responses:
+ *       200:
+ *         description: Product images retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Product not found
+ */
+productsRouter.get(
+    "/products/:productId/images",
+    productsController.getProductImages
+);
+
+/**
+ * @swagger
+ * /products/{productId}/images:
+ *   post:
+ *     summary: Add images to a product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Product ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - images
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 maxItems: 3
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: Images added successfully
+ *       400:
+ *         description: Invalid image files
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Product not found
+ */
+productsRouter.post(
+    "/products/:productId/images",
+    authenticate,
+    authorize("admin"),
+    upload.array("images", 3),
+    productsController.addImagetoProduct
+);
+
+/**
+ * @swagger
+ * /products/{productId}/images/{imageId}:
+ *   delete:
+ *     summary: Delete an image from a product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Product ID
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Image ID
+ *     responses:
+ *       200:
+ *         description: Image deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Product or image not found
+ */
+productsRouter.delete(
+    "/products/:productId/images/:imageId",
+    authenticate,
+    authorize("admin"),
+    productsController.deleteProductImage
 );
 
 export default productsRouter;

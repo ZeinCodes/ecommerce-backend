@@ -17,6 +17,7 @@ const ordersRouter = express.Router();
  * /orders:
  *   get:
  *     summary: Get orders
+ *     tags: [Orders]
  *     description: Get orders with pagination.
  *     security:
  *       - bearerAuth: []
@@ -58,6 +59,7 @@ ordersRouter.get(
  * /orders/{id}:
  *   get:
  *     summary: Get order by ID
+ *     tags: [Orders]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -87,6 +89,7 @@ ordersRouter.get(
  * /orders/{id}/items:
  *   get:
  *     summary: Get order items
+ *     tags: [Orders]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -116,6 +119,7 @@ ordersRouter.get(
  * /orders:
  *   post:
  *     summary: Create a new order from the current user's cart
+ *     tags: [Orders]
  *     description: Converts the authenticated user's cart into an order. Cart must not be empty; stock is re-validated at checkout and the cart is cleared on success.
  *     security:
  *       - bearerAuth: []
@@ -141,6 +145,7 @@ ordersRouter.post(
  * /orders/{id}/status:
  *   patch:
  *     summary: Update order status
+ *     tags: [Orders]
  *     security:
  *       - bearerAuth: []
  *     parameters:

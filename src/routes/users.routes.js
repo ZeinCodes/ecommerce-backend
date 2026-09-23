@@ -19,6 +19,7 @@ const usersRouter = express.Router();
  * /users:
  *   get:
  *     summary: Get all users
+ *     tags: [Users]
  *     description: Get all users with pagination.
  *     security:
  *       - bearerAuth: []
@@ -63,6 +64,7 @@ usersRouter.get(
  * /users/{id}:
  *   get:
  *     summary: Get user by ID
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -95,6 +97,7 @@ usersRouter.get(
  * /users:
  *   post:
  *     summary: Create a new user
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -148,6 +151,7 @@ usersRouter.post(
  * /users/{id}:
  *   patch:
  *     summary: Update a user
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -185,6 +189,7 @@ usersRouter.patch(
  * /users/{id}:
  *   delete:
  *     summary: Delete a user
+ *     tags: [Users]
  *     description: Soft delete a user.
  *     security:
  *       - bearerAuth: []

@@ -126,12 +126,70 @@ const deleteProduct = async (req, res, next) => {
     }
 };
 
+const getProductImages = async (req, res, next) => {
+    try {
+        const { productId } =  req.params;
+
+        const result = await productsService.getProductImages(productId);
+
+        res.status(200).json({
+            success: true,
+            message: "Product images retrieved successfully",
+            result
+        })
+    } catch (error) {
+        next(error);
+    }
+};
+
+const addImagetoProduct = async (req, res, next) => {
+    try {
+        const { productId } = req.params;
+        const files = req.files;
+
+        const result = await productsService.addImageToProduct(
+            productId,
+            files
+        );
+
+        return res.status(200).json({
+            message: "Images have been added",
+            success: true,
+            result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteProductImage = async (req, res, next) => {
+    try {
+        const { productId, imageId } =  req.params;
+
+        const result = await productsService.deleteProductImage(
+            productId, 
+            imageId
+        );
+
+        return res.status(200).json({
+            message: "Image has been deleted",
+            success: true,
+            result
+        });        
+    } catch (error) {
+        next(error);
+    }
+};
+
 const productsController = {
     getAllProducts,
     getProductById,
     postProduct,
     patchProduct,
-    deleteProduct
+    deleteProduct,
+    getProductImages,
+    addImagetoProduct,
+    deleteProductImage
 };
 
 export default productsController;
