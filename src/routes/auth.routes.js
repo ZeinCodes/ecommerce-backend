@@ -32,6 +32,7 @@ const registerLimiter = rateLimit({
  * /auth/register:
  *   post:
  *     summary: User registry
+ *     tags: [Authentication]
  *     requestBody:
  *       required: true
  *       content:
@@ -78,6 +79,7 @@ authRouter.post(
  * /auth/login:
  *   post:
  *     summary: User login
+ *     tags: [Authentication]
  *     description: Authenticate a user and return a JWT token.
  *     requestBody:
  *       required: true
