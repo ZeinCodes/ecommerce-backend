@@ -131,4 +131,9 @@ authRouter.post(
     authController.userLogin
 );
 
+authRouter.post(
+    "/auth/refresh",
+    authController.refresh
+)
+
 export default authRouter;

@@ -1,8 +1,10 @@
 import bcrypt from "bcrypt";
+import crypto from "node:crypto";
 import UnauthorizedError from "../errors/UnauthorizedError.js";
 import ConflictError from "../errors/ConflictError.js";
 import * as authRepository from "../repositories/users.repository.js";
-import { generateToken } from "../utils/jwt.js";
+import * as refreshTokenRepository from "../repositories/refresh_token.repositories.js"
+import * as JWT from "../utils/jwt.js";
 
 const login = async (email, password) => {
     const user = await authRepository.findUserByEmail(email);
@@ -19,11 +21,28 @@ const login = async (email, password) => {
     if (!isPassed) {
         throw new UnauthorizedError("Invalid credentials");
     }
-
-    const token = generateToken(user);
+    
+    const accessToken = JWT.generateAccessToken(user);
+    const refreshToken = JWT.generateRefreshToken(user);
+  
+    const tokenHash = crypto
+    .createHash("sha256")
+    .update(refreshToken)
+    .digest("hex")
+                          
+    const expiresAt = new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000
+    );
+    
+    await refreshTokenRepository.createRefreshToken(
+        user.id,
+        tokenHash,
+        expiresAt
+    )
 
     return {
-        token,
+        accessToken,
+        refreshToken,
         user: {
             id: user.id,
             name: user.name,
@@ -48,10 +67,27 @@ const register = async (name, email, password) => {
         hashedPassword
     );
 
-    const token = generateToken(user);
+    const accessToken = JWT.generateAccessToken(user);
+    const refreshToken = JWT.generateRefreshToken(user);
+
+    const expiresAt = new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000
+    );
+
+    const tokenHash = crypto
+    .createHash("sha256")
+    .update(refreshToken)
+    .digest("hex") 
+
+    await refreshTokenRepository.createRefreshToken(
+        user.id,
+        tokenHash,
+        expiresAt
+    )
 
     return {
-        token,
+        accessToken,
+        refreshToken,
         user: {
             name: user.name,
             email: user.email,
@@ -59,7 +95,31 @@ const register = async (name, email, password) => {
     };
 }
 
+const refresh = async (refreshToken) => {
+    const payload = JWT.verifyRefreshToken(refreshToken);
+
+    const tokenHash = crypto
+        .createHash("sha256")
+        .update(refreshToken)
+        .digest("hex");
+
+    const storedToken =
+        await refreshTokenRepository.findRefreshTokenByHash(tokenHash);
+
+    if (!storedToken) {
+        throw new UnauthorizedError("Invalid refresh token");
+    }
+
+    const accessToken = JWT.generateAccessToken({
+        id: payload.id,
+        role: payload.role
+    });
+
+    return accessToken;
+};``
+
 export {
     login,
-    register
+    register,
+    refresh
 };
