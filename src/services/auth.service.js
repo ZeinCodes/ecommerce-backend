@@ -116,10 +116,29 @@ const refresh = async (refreshToken) => {
     });
 
     return accessToken;
-};``
+};
+
+const logout = async (token) => {
+    JWT.verifyRefreshToken(token);
+
+    const tokenHash = crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
+
+    const deleted =
+        await refreshTokenRepository.deleteRefreshToken(tokenHash);
+
+    if (!deleted) {
+        throw new UnauthorizedError("Invalid refresh token");
+    }
+
+    return deleted;
+}
 
 export {
     login,
     register,
-    refresh
+    refresh,
+    logout
 };

@@ -4,7 +4,8 @@ import rateLimit from "express-rate-limit";
 import * as authController from "../controllers/auth.controller.js";
 import { 
     loginSchema,
-    registerSchema
+    registerSchema,
+    logoutSchema
 } from "../validators/users.validator.js";
 
 const authRouter = express.Router();
@@ -129,11 +130,91 @@ authRouter.post(
     loginLimiter,
     validate(loginSchema),
     authController.userLogin
-);
+)
 
+/**
+ * @swagger
+ * /auth/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Authentication]
+ *     description: Generate a new access token using a valid refresh token.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token received during login
+ *     responses:
+ *       200:
+ *         description: Access token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 accessToken:
+ *                   type: string
+ *                   description: New JWT access token
+ *       401:
+ *         description: Invalid or expired refresh token
+ */
 authRouter.post(
     "/auth/refresh",
     authController.refresh
+)
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: User logout
+ *     tags: [Authentication]
+ *     description: Delete the refresh token and log the user out.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token received during login
+ *     responses:
+ *       200:
+ *         description: Successfully logged out
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Successfully logged out
+ *       401:
+ *         description: Invalid refresh token
+ *       422:
+ *         description: Validation failed
+ */
+authRouter.post(
+    "/auth/logout",
+    validate(logoutSchema),
+    authController.logout
 )
 
 export default authRouter;
