@@ -40,6 +40,12 @@ export const loginSchema = z.object({
         .min(8, "Password must be at least 8 characters")
 }).strict();
 
+export const logoutSchema = z.object({
+    refreshToken: z
+        .string()
+        .min(1, "refreshToken is required")
+}).strict();
+
 export const updateUserSchema = z.object({
     name: z
         .string()

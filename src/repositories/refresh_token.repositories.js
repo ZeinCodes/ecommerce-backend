@@ -25,7 +25,18 @@ const findRefreshTokenByHash = async (tokenHash) => {
     return result.rows[0];
 };
 
+const deleteRefreshToken = async (tokenHash) => {
+    const result = await pool.query(
+        `DELETE FROM refresh_tokens
+         WHERE token_hash = $1
+         RETURNING *`,
+        [tokenHash]
+    )
+    return result.rows[0];
+}
+
 export {
     createRefreshToken,
-    findRefreshTokenByHash
+    findRefreshTokenByHash,
+    deleteRefreshToken
 }
