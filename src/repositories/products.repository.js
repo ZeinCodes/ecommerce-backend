@@ -1,7 +1,7 @@
 import pool from "../db/database.js";
 import BadRequestError from "../errors/BadRequestError.js";
 import NotFoundError from "../errors/NotFoundError.js";
-import fs from "node:fs/promises";
+import cloudinary from "../config/cloudinary.js";
 
 const findAllProducts = async (
     page = 1,
@@ -228,8 +228,24 @@ const findImageById = async (productId, imageId) => {
     return result.rows[0];
 }
 
+const uploadBuffer = (buffer) =>
+    new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder: "ecommerce/products" },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            }
+        );
+        stream.end(buffer);
+    });
+
 const postImages = async (productId, files) => {
-    const imageUrls = files.map((file) => `/uploads/${file.filename}`);
+    const uploads = await Promise.all(
+        files.map((file) => uploadBuffer(file.buffer))
+    );
+
+    const imageUrls = uploads.map((upload) => upload.secure_url);
 
     const placeholders = imageUrls.map((_, index) => {
         return `($1, $${index + 2})`;
@@ -250,6 +266,11 @@ const postImages = async (productId, files) => {
     return result.rows;
 };
 
+const getPublicId = (url) => {
+    const match = url.match(/upload\/(?:v\d+\/)?(.+)\.[^.]+$/);
+    return match ? match[1] : null;
+};
+
 const deleteImage = async (productId, imageId) => {
     const image = await findImageById(productId, imageId);
 
@@ -257,14 +278,18 @@ const deleteImage = async (productId, imageId) => {
         return null;
     }
 
-    await fs.unlink(`.${image.image_url}`);
+    const publicId = getPublicId(image.image_url);
+
+    if (publicId) {
+        await cloudinary.uploader.destroy(publicId);
+    }
 
     await pool.query(
         `DELETE FROM product_images
          WHERE product_id = $1
          AND id = $2`,
         [productId, imageId]
-    )
+    );
 
     return image;
 };
