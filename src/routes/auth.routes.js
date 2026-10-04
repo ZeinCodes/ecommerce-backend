@@ -2,10 +2,13 @@ import express from "express";
 import validate from "../middlewares/validate.js";
 import rateLimit from "express-rate-limit";
 import * as authController from "../controllers/auth.controller.js";
-import { 
+import {
     loginSchema,
     registerSchema,
-    logoutSchema
+    refreshSchema,
+    logoutSchema,
+    forgotPasswordSchema,
+    resetPasswordSchema
 } from "../validators/users.validator.js";
 
 const authRouter = express.Router();
@@ -18,6 +21,24 @@ const loginLimiter = rateLimit({
         message: "Too many login attempts, please try again later"
     }
 })
+
+const forgotPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 3,
+    message: {
+        success: false,
+        message: "Too many password reset requests, please try again later"
+    }
+})
+
+const resetPasswordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: {
+        success: false,
+        message: "Too many password reset attempts. Please try again later."
+    }
+});
 
 const registerLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -46,7 +67,7 @@ const registerLimiter = rateLimit({
  *               - password
  *             properties:
  *               name:
- *                 type: string 
+ *                 type: string
  *               email:
  *                 type: string
  *                 format: email
@@ -55,17 +76,17 @@ const registerLimiter = rateLimit({
  *                 format: password
  *
  *     responses:
- *       200:
+ *       201:
  *         description: Signed Up successfully
- * 
+ *
  *       400:
  *         description: Bad request
- *         
- *       409: 
+ *
+ *       409:
  *         description: Conflict
- *         
+ *
  *       422:
- *         description: Unprocessable Entity *         
+ *         description: Unprocessable Entity
  */
 
 authRouter.post(
@@ -81,7 +102,7 @@ authRouter.post(
  *   post:
  *     summary: User login
  *     tags: [Authentication]
- *     description: Authenticate a user and return a JWT token.
+ *     description: Authenticate a user and return access and refresh tokens.
  *     requestBody:
  *       required: true
  *       content:
@@ -115,9 +136,12 @@ authRouter.post(
  *                 message:
  *                   type: string
  *                   example: Welcome Back John
- *                 token:
+ *                 accessToken:
  *                   type: string
- *                   description: JWT authentication token
+ *                   description: JWT access token
+ *                 refreshToken:
+ *                   type: string
+ *                   description: JWT refresh token
  *
  *       401:
  *         description: Invalid email or password
@@ -167,9 +191,12 @@ authRouter.post(
  *                   description: New JWT access token
  *       401:
  *         description: Invalid or expired refresh token
+ *       422:
+ *         description: Validation failed
  */
 authRouter.post(
     "/auth/refresh",
+    validate(refreshSchema),
     authController.refresh
 )
 
@@ -215,6 +242,85 @@ authRouter.post(
     "/auth/logout",
     validate(logoutSchema),
     authController.logout
+)
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Forgot Password
+ *     tags: [Authentication]
+ *     description: Send a password reset link to the user's email.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User email address
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: If the email exists, a reset link has been sent
+ *       422:
+ *         description: Validation failed
+ *       429:
+ *         description: Too many requests
+ */
+
+authRouter.post(
+    "/auth/forgot-password",
+    forgotPasswordLimiter,
+    validate(forgotPasswordSchema),
+    authController.forgotPassword
+)
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password
+ *     tags:
+ *       - Authentication
+ *     description: Reset the password using a valid reset token.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Password reset token received by email.
+ *                 example: abc123def456
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *                 example: NewPassword123!
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid or expired password reset token
+ *       422:
+ *         description: Validation failed
+ *       429:
+ *         description: Too many requests
+ */
+authRouter.post(
+    "/auth/reset-password",
+    resetPasswordLimiter,
+    validate(resetPasswordSchema),
+    authController.resetPassword
 )
 
 export default authRouter;

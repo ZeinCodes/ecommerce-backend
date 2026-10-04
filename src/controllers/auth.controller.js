@@ -16,7 +16,6 @@ const userLogin = async (req, res, next) => {
             refreshToken: result.refreshToken
         });
     } catch (error) {
-        console.log(error)
         next(error);
     }
 };
@@ -30,7 +29,7 @@ const userRegister = async (req, res, next) => {
             name, email, password
         );
         
-        res.status(200).json({
+        res.status(201).json({
             success: true,
             message: "Signed up",
             accessToken: result.accessToken,
@@ -43,7 +42,7 @@ const userRegister = async (req, res, next) => {
 
 const refresh = async (req, res, next) => {
     try {
-        const { refreshToken } = req.body;
+        const { refreshToken } = req.validated.body;
 
         const accessToken = await authService.refresh(refreshToken);
 
@@ -71,9 +70,44 @@ const logout = async (req, res, next) => {
     }
 }
 
+const forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.validated.body;
+
+        await authService.forgotPassword(email);
+
+        return res.status(200).json({
+            success: true,
+            message: "If that email exists, a reset link has been sent"
+        })
+    } catch (error) {
+        next(error);
+    }
+}
+
+const resetPassword = async (req, res, next) => {
+    try { 
+        const { token, newPassword } = req.validated.body;
+
+        await authService.resetPassword(
+            token, 
+            newPassword
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Password successfully changed"
+        })
+    } catch (error) {
+        next(error);
+    }
+}
+
 export {
     userLogin,
     userRegister,
     refresh,
-    logout
+    logout,
+    forgotPassword,
+    resetPassword
 };
