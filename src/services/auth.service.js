@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import crypto from "node:crypto";
 import UnauthorizedError from "../errors/UnauthorizedError.js";
 import ConflictError from "../errors/ConflictError.js";
+import ForbiddenError from "../errors/ForbiddenError.js";
 import * as authRepository from "../repositories/users.repository.js";
 import * as refreshTokenRepository from "../repositories/refresh_token.repositories.js"
 import * as JWT from "../utils/jwt.js";
@@ -21,6 +22,10 @@ const login = async (email, password) => {
 
     if (!user || !isPassed) {
         throw new UnauthorizedError("Invalid credentials");
+    }
+
+    if (!user.email_verified_at) {
+        throw new ForbiddenError("Please verify your email first")
     }
 
     const accessToken = JWT.generateAccessToken(user);
@@ -60,41 +65,102 @@ const register = async (name, email, password) => {
         throw new ConflictError("Email is already registered");
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
+    const hashedPassword = await bcrypt.hash(
+        password, 
+        10
+    );
+    
     const user = await authRepository.registerUser(
         name,
         email,
         hashedPassword
     );
 
-    const accessToken = JWT.generateAccessToken(user);
-    const refreshToken = JWT.generateRefreshToken(user);
+    const emailVerificationToken = crypto
+    .randomBytes(32)
+    .toString("hex")
 
-    const expiresAt = new Date(
-        Date.now() + 30 * 24 * 60 * 60 * 1000
-    );
-
-    const tokenHash = crypto
+    const emailVerificationTokenHash = crypto
     .createHash("sha256")
-    .update(refreshToken)
+    .update(emailVerificationToken)
     .digest("hex")
 
-    await refreshTokenRepository.createRefreshToken(
+    const expiresAt = new Date(
+        Date.now() + 24 * 60 * 60 * 1000
+    );
+
+    await authRepository.userVerification(
         user.id,
-        tokenHash,
-        expiresAt
+        emailVerificationTokenHash,
+        expiresAt,
     )
 
+    resend.emails.send({
+    from: process.env.MAIL_FROM,
+    to: user.email,
+    subject: "Verify your email",
+    html: `
+        <p>Click the link below to verify your email:</p>
+        <a href="${process.env.FRONTEND_URL}/verify-email?token=${emailVerificationToken}">
+            Verify your email
+        </a>
+        <p>This link expires in 24 hours.</p>
+    `
+    }).catch((error) => {
+        return console.error("Failed to send email verification:", error);
+    });
+
     return {
-        accessToken,
-        refreshToken,
         user: {
             name: user.name,
             email: user.email,
         }
     };
 }
+
+const verifyEmail = async (token) => {
+    const tokenHash = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+    await authRepository.verifyEmail(tokenHash);
+}
+
+const resendVerification = async (email) => {
+    const user = await authRepository.findUserByEmail(email);
+
+    if (!user || user.email_verified_at) return;
+
+    const token = crypto.
+    randomBytes(32).
+    toString("hex");
+
+    const tokenHash = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+    const expiresAt = new Date(
+        Date.now() + 24 * 60 * 60 * 1000
+    );
+
+    await authRepository.invalidateUserVerificationTokens(user.id);
+    await authRepository.userVerification(user.id, tokenHash, expiresAt);
+
+    resend.emails.send({
+        from: process.env.MAIL_FROM,
+        to: user.email,
+        subject: "Verify your email",
+        html: `
+            <p>Click the link below to verify your email:</p>
+            <a href="${process.env.FRONTEND_URL}/verify-email?token=${token}">Verify your email</a>
+            <p>This link expires in 24 hours.</p>
+        `
+    }).catch((error) =>
+        console.error("Failed to send email verification:", error 
+    ));
+};
 
 const refresh = async (refreshToken) => {
     const payload = JWT.verifyRefreshToken(refreshToken);
@@ -221,5 +287,7 @@ export {
     refresh,
     logout,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    verifyEmail,
+    resendVerification
 };

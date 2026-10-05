@@ -25,20 +25,48 @@ const userRegister = async (req, res, next) => {
         
         const { name, email, password } = req.validated.body;
         
-        const result = await authService.register(
+        await authService.register(
             name, email, password
         );
         
         res.status(201).json({
             success: true,
-            message: "Signed up",
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken
+            message: "If that account exists an email has been sent to verify it",
         })
     } catch (error) {
         next(error);        
     }
 }
+
+const verifyEmail = async (req, res, next) => {
+    try {
+        const { token } = req.validated.body;
+
+        const result = await authService.verifyEmail(token);
+
+        res.status(200).json({
+            success: true,
+            message: "Email verified ✔",
+            result
+        })
+    } catch (error) {
+        next(error);
+    }
+}
+
+const resendVerification = async (req, res, next) => {
+    try {
+        const { email } = req.validated.body;
+
+        await authService.resendVerification(email);
+        res.status(200).json({
+            success: true,
+            message: "If that account exists and is unverified, an email has been sent"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 const refresh = async (req, res, next) => {
     try {
@@ -106,8 +134,10 @@ const resetPassword = async (req, res, next) => {
 export {
     userLogin,
     userRegister,
+    resendVerification,
     refresh,
     logout,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    verifyEmail
 };

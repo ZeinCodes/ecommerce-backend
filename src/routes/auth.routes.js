@@ -8,7 +8,9 @@ import {
     refreshSchema,
     logoutSchema,
     forgotPasswordSchema,
-    resetPasswordSchema
+    resetPasswordSchema,
+    verifyEmailSchema,
+    resendVerificationSchema
 } from "../validators/users.validator.js";
 
 const authRouter = express.Router();
@@ -21,6 +23,19 @@ const loginLimiter = rateLimit({
         message: "Too many login attempts, please try again later"
     }
 })
+
+const verifyLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { success: false, message: "Too many attempts, please try again later" }
+});
+
+const resendVerifyLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { success: false, message: "Too many attempts, please try again later" }
+});
+
 
 const forgotPasswordLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -94,6 +109,76 @@ authRouter.post(
     registerLimiter,
     validate(registerSchema),
     authController.userRegister
+)
+
+/**
+ * @swagger
+ * /auth/verify-email:
+ *   post:
+ *     summary: Verify user email
+ *     tags: [Authentication]
+ *     description: Verify a user's email using the verification token sent to their email.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: "verification-token"
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *       400:
+ *         description: Bad request
+ *       422:
+ *         description: Unprocessable Entity
+ */
+authRouter.post(
+    "/auth/verify-email",
+    verifyLimiter,
+    validate(verifyEmailSchema),
+    authController.verifyEmail
+);
+
+/**
+ * @swagger
+ * /auth/resend-verification:
+ *   post:
+ *     summary: Resend verification email
+ *     tags: [Authentication]
+ *     description: Send a new email verification link to the user's email address.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email address of the user
+ *                 example: "user@example.com"
+ *     responses:
+ *       200:
+ *         description: Verification email sent successfully
+ *       400:
+ *         description: Bad request
+ *       422:
+ *         description: Unprocessable Entity
+ */
+authRouter.post(
+    "/auth/resend-verification",
+    resendVerifyLimiter,
+    validate(resendVerificationSchema),
+    authController.resendVerification
 )
 
 /**
