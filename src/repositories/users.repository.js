@@ -194,7 +194,8 @@ const findUserByEmail = async (
             name,
             email,
             role,
-            password_hash
+            password_hash,
+            email_verified_at
          FROM users
          WHERE email = $1
          AND deleted_at IS NULL`,
@@ -230,9 +231,68 @@ const registerUser = async (
     return result.rows[0];
 }
 
+const userVerification = async (userId, tokenHash, expiresAt) => {
+    await pool.query(
+        `INSERT INTO email_verification_tokens (
+            user_id,
+            token_hash,
+            expires_at
+         ) VALUES ($1, $2, $3)`,
+        [userId, tokenHash, expiresAt]
+    );
+};
+
+const invalidateUserVerificationTokens = async (userId) => {
+    await pool.query(
+        `UPDATE email_verification_tokens
+         SET used_at = NOW()
+         WHERE user_id = $1 AND used_at IS NULL`,
+        [userId]
+    );
+};
+
+const verifyEmail = async (tokenHash) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const tokenResult = await client.query(
+            `UPDATE email_verification_tokens
+             SET used_at = NOW()
+             WHERE token_hash = $1
+               AND used_at IS NULL
+               AND expires_at > NOW()
+             RETURNING user_id`,
+            [tokenHash]
+        );
+
+        if (tokenResult.rowCount === 0) {
+            throw new BadRequestError("Invalid or expired verification token");
+        }
+
+        await client.query(
+            `UPDATE users
+             SET 
+                email_verified_at = NOW(),
+                updated_at = NOW()
+             WHERE id = $1 
+             AND deleted_at IS NULL`,
+            [tokenResult.rows[0].user_id]
+        );
+
+        await client.query("COMMIT");
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
 const forgotPassword = async (
     userId,
-    hash_token,
+    hashToken,
     expireAt,
     usedAt
 ) => {
@@ -248,7 +308,7 @@ const forgotPassword = async (
             user_id,
             expires_at,
             created_at`,
-        [userId, hash_token, expireAt, usedAt]
+        [userId, hashToken, expireAt, usedAt]
     )
     return result.rows[0]
 }
@@ -263,23 +323,6 @@ const invalidateUserResetTokens = async (userId) => {
     );
 };
 
-const findValidPasswordResetToken = async (tokenHash) => {
-    const result = await pool.query(
-        `SELECT
-            prt.id,
-            prt.user_id,
-            prt.expires_at,
-            prt.used_at
-         FROM password_reset_tokens prt
-         WHERE prt.token_hash = $1
-           AND prt.used_at IS NULL
-           AND prt.expires_at > NOW()
-         LIMIT 1`,
-        [tokenHash]
-    );
-
-    return result.rows[0] || null;
-};
 
 const resetPassword = async (tokenHash, newPasswordHash) => {
     const client = await pool.connect();
@@ -308,7 +351,7 @@ const resetPassword = async (tokenHash, newPasswordHash) => {
         await client.query(
             `UPDATE users
              SET password_hash = $1,
-                 updated_at = NOW()
+                updated_at = NOW()
              WHERE id = $2
              AND deleted_at IS NULL`,
             [newPasswordHash, userId]
@@ -337,8 +380,10 @@ export {
     deleteUser,
     findUserByEmail,
     registerUser,
+    invalidateUserVerificationTokens,
     forgotPassword,
     invalidateUserResetTokens,
-    findValidPasswordResetToken,
-    resetPassword
+    resetPassword,
+    userVerification,
+    verifyEmail
 };

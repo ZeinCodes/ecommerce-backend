@@ -33,6 +33,14 @@ export const registerSchema = z.object({
         .max(72, "Password cannot exceed 72 characters"),
 }).strict();
 
+export const verifyEmailSchema = z.object({
+    token: z.string().min(1, "Verification token is required")
+}).strict();
+
+export const resendVerificationSchema = z.object({
+    email: z.email("Invalid email address")
+}).strict();
+
 export const loginSchema = z.object({
     email: z
         .email("Invalid email address"),

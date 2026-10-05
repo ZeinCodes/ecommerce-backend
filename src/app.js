@@ -35,6 +35,8 @@ app.use(
 
 app.use(express.json());
 
+app.set("trust proxy", 1);
+
 app.use(authRouter);
 app.use(usersRouter);
 app.use(categoriesRouter); 

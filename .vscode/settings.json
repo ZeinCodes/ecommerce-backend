@@ -27,6 +27,9 @@
         "strings": true
     },
 
+    "editor.fontFamily": "'JetBrains Mono', monospace",
+    "editor.fontLigatures": true,
+
     "editor.suggestSelection": "first",
     "editor.acceptSuggestionOnEnter": "on",
 
