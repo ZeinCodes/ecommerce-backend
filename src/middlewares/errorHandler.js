@@ -1,3 +1,4 @@
+import multer from "multer";
 import AppError from "../errors/AppError.js";
 
 const errorHandler = (error, req, res, next) => {
@@ -7,6 +8,20 @@ const errorHandler = (error, req, res, next) => {
             success: false,
             message: error.message,
             errors: error.errors
+        });
+    }
+
+    if (error instanceof multer.MulterError) {
+        const message =
+            error.code === "LIMIT_FILE_SIZE"
+                ? "File is too large (max 5MB per image)"
+                : error.code === "LIMIT_UNEXPECTED_FILE"
+                    ? "Too many files or unexpected field name (max 3 images, field name: images)"
+                    : error.message;
+
+        return res.status(400).json({
+            success: false,
+            message
         });
     }
 
@@ -33,6 +48,8 @@ const errorHandler = (error, req, res, next) => {
             message: "Resource not found"
         });
     }
+
+    console.error(error);
 
     return res.status(500).json({
         success: false,

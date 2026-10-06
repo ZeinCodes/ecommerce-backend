@@ -1,4 +1,5 @@
 import multer from "multer";
+import BadRequestError from "../errors/BadRequestError.js";
 
 const storage = multer.memoryStorage();
 
@@ -13,7 +14,7 @@ const upload = multer({
             cb(null, true);
             return;
         }
-        cb(new Error("Only image files are allowed"));
+        cb(new BadRequestError("Only image files are allowed"));
     },
     limits: {
         fileSize: 5 * 1024 * 1024

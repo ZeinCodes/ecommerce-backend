@@ -9,10 +9,12 @@ const buildCartResponse = (items) => {
         0
     );
 
-    const subtotal = items.reduce(
-        (sum, item) => sum + Number(item.subtotal),
+    const subtotalCents = items.reduce(
+        (sum, item) => sum + Math.round(Number(item.subtotal) * 100),
         0
     );
+
+    const subtotal = subtotalCents / 100;
 
     return {
         items,

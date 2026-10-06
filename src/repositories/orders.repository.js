@@ -203,7 +203,7 @@ const createOrder = async (
             }
         }
 
-        let totalPrice = 0;
+        let totalCents = 0;
 
         for (const item of cartItems) {
             const product = products.find(
@@ -211,10 +211,12 @@ const createOrder = async (
                     product.id === item.product_id
             );
 
-            totalPrice +=
-                Number(product.price) *
+            totalCents +=
+                Math.round(Number(product.price) * 100) *
                 item.quantity;
         }
+
+        const totalPrice = totalCents / 100;
 
         const orderResult = await client.query(
             `INSERT INTO orders (

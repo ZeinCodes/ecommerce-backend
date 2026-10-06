@@ -95,18 +95,75 @@ const addNewUser = async (
     return result.rows[0];
 };
 
-const updateUser = async (
-    updates,
-    id
+const registerUserWithVerification = async (
+    name,
+    email,
+    passwordHash,
+    tokenHash,
+    expiresAt
 ) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const userResult = await client.query(
+            `INSERT INTO users (
+                name,
+                email,
+                password_hash,
+                role
+            )
+            VALUES ($1, $2, $3, $4)
+            RETURNING
+                id,
+                name,
+                email,
+                role,
+                created_at`,
+            [
+                name,
+                email,
+                passwordHash,
+                "user"
+            ]
+        );
+
+        const user = userResult.rows[0];
+
+        await client.query(
+            `INSERT INTO email_verification_tokens (
+                user_id,
+                token_hash,
+                expires_at
+            )
+            VALUES ($1, $2, $3)`,
+            [
+                user.id,
+                tokenHash,
+                expiresAt
+            ]
+        );
+
+        await client.query("COMMIT");
+
+        return user;
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+const updateUser = async (updates, id) => {
     const allowedFields = {
         name: "name",
         email: "email",
         password: "password_hash"
     };
 
-    const fields =
-        Object.keys(updates);
+    const fields = Object.keys(updates);
 
     if (fields.length === 0) {
         throw new BadRequestError(
@@ -114,11 +171,9 @@ const updateUser = async (
         );
     }
 
-    const invalidFields =
-        fields.filter(
-            field =>
-                !allowedFields[field]
-        );
+    const invalidFields = fields.filter(
+        (field) => !allowedFields[field]
+    );
 
     if (invalidFields.length > 0) {
         throw new BadRequestError(
@@ -126,38 +181,39 @@ const updateUser = async (
         );
     }
 
-    const setQuery =
-        fields
-            .map(
-                (field, index) =>
-                    `${allowedFields[field]} = $${index + 1}`
-            )
-            .join(", ");
+    let setQuery = fields
+        .map(
+            (field, index) =>
+                `${allowedFields[field]} = $${index + 1}`
+        )
+        .join(", ");
 
-    const values =
-        fields.map(
-            field => updates[field]
-        );
+    const values = fields.map(
+        (field) => updates[field]
+    );
+
+    if (fields.includes("email")) {
+        setQuery += ", email_verified_at = NULL";
+    }
 
     values.push(id);
 
-    const result =
-        await pool.query(
-            `UPDATE users
-             SET
-                ${setQuery},
-                updated_at = NOW()
-             WHERE id = $${values.length}
-             AND deleted_at IS NULL
-             RETURNING
-                id,
-                name,
-                email,
-                role,
-                created_at,
-                updated_at`,
-            values
-        );
+    const result = await pool.query(
+        `UPDATE users
+         SET
+            ${setQuery},
+            updated_at = NOW()
+         WHERE id = $${values.length}
+         AND deleted_at IS NULL
+         RETURNING
+            id,
+            name,
+            email,
+            role,
+            created_at,
+            updated_at`,
+        values
+    );
 
     return result.rows[0];
 };
@@ -231,24 +287,41 @@ const registerUser = async (
     return result.rows[0];
 }
 
-const userVerification = async (userId, tokenHash, expiresAt) => {
-    await pool.query(
-        `INSERT INTO email_verification_tokens (
-            user_id,
-            token_hash,
-            expires_at
-         ) VALUES ($1, $2, $3)`,
-        [userId, tokenHash, expiresAt]
-    );
-};
+const replaceUserVerificationToken = async (
+    userId,
+    tokenHash,
+    expiresAt
+) => {
+    const client = await pool.connect();
 
-const invalidateUserVerificationTokens = async (userId) => {
-    await pool.query(
-        `UPDATE email_verification_tokens
-         SET used_at = NOW()
-         WHERE user_id = $1 AND used_at IS NULL`,
-        [userId]
-    );
+    try {
+        await client.query("BEGIN");
+
+        await client.query(
+            `UPDATE email_verification_tokens
+             SET used_at = NOW()
+             WHERE user_id = $1
+             AND used_at IS NULL`,
+            [userId]
+        );
+
+        await client.query(
+            `INSERT INTO email_verification_tokens (
+                user_id,
+                token_hash,
+                expires_at
+            )
+            VALUES ($1, $2, $3)`,
+            [userId, tokenHash, expiresAt]
+        );
+
+        await client.query("COMMIT");
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 const verifyEmail = async (tokenHash) => {
@@ -357,11 +430,7 @@ const resetPassword = async (tokenHash, newPasswordHash) => {
             [newPasswordHash, userId]
         )
 
-        await client.query(
-            `DELETE FROM refresh_tokens
-             WHERE user_id = $1`,
-            [userId]
-        )
+        await revokeUserRefreshTokens(userId, client);
 
         await client.query("COMMIT")
     } catch (error) {
@@ -372,18 +441,27 @@ const resetPassword = async (tokenHash, newPasswordHash) => {
     }
 }
 
+const revokeUserRefreshTokens = async (userId, client = pool) => {
+    await client.query(
+        `DELETE FROM refresh_tokens
+         WHERE user_id = $1`,
+        [userId]
+    );
+};
+
 export {
     findAllUsers,
     findUserById,
     addNewUser,
+    registerUserWithVerification,
     updateUser,
     deleteUser,
     findUserByEmail,
     registerUser,
-    invalidateUserVerificationTokens,
     forgotPassword,
     invalidateUserResetTokens,
     resetPassword,
-    userVerification,
-    verifyEmail
+    replaceUserVerificationToken,
+    verifyEmail,
+    revokeUserRefreshTokens
 };

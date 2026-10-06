@@ -17,6 +17,8 @@ import errorHandler from "./middlewares/errorHandler.js";
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -33,9 +35,7 @@ app.use(
     })
 );
 
-app.use(express.json());
-
-app.set("trust proxy", 1);
+app.use(express.json({ limit: "100kb" }));
 
 app.use(authRouter);
 app.use(usersRouter);

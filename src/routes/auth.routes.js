@@ -1,6 +1,14 @@
 import express from "express";
 import validate from "../middlewares/validate.js";
-import rateLimit from "express-rate-limit";
+import { 
+    loginIpLimiter,
+    loginEmailLimiter,
+    forgotPasswordLimiter,
+    registerLimiter,
+    resendVerifyLimiter,
+    resetPasswordLimiter,
+    verifyLimiter,
+} from "../middlewares/rateLimiter.js"
 import * as authController from "../controllers/auth.controller.js";
 import {
     loginSchema,
@@ -14,55 +22,6 @@ import {
 } from "../validators/users.validator.js";
 
 const authRouter = express.Router();
-
-const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: {
-        success: false,
-        message: "Too many login attempts, please try again later"
-    }
-})
-
-const verifyLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: { success: false, message: "Too many attempts, please try again later" }
-});
-
-const resendVerifyLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: { success: false, message: "Too many attempts, please try again later" }
-});
-
-
-const forgotPasswordLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 3,
-    message: {
-        success: false,
-        message: "Too many password reset requests, please try again later"
-    }
-})
-
-const resetPasswordLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: {
-        success: false,
-        message: "Too many password reset attempts. Please try again later."
-    }
-});
-
-const registerLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: {
-        success: false,
-        message: "Too many sign up attempts, please try again later"
-    }
-})
 
 /**
  * @swagger
@@ -236,7 +195,8 @@ authRouter.post(
  */
 authRouter.post(
     "/auth/login",
-    loginLimiter,
+    loginIpLimiter,
+    loginEmailLimiter,
     validate(loginSchema),
     authController.userLogin
 )

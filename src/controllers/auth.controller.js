@@ -72,11 +72,12 @@ const refresh = async (req, res, next) => {
     try {
         const { refreshToken } = req.validated.body;
 
-        const accessToken = await authService.refresh(refreshToken);
+        const result = await authService.refresh(refreshToken);
 
         res.status(200).json({
             success: true,
-            accessToken
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken
         });
     } catch (error) {
         next(error);

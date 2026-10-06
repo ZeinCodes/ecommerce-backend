@@ -1,7 +1,6 @@
 import bcrypt from "bcrypt";
 import crypto from "node:crypto";
 import UnauthorizedError from "../errors/UnauthorizedError.js";
-import ConflictError from "../errors/ConflictError.js";
 import ForbiddenError from "../errors/ForbiddenError.js";
 import * as authRepository from "../repositories/users.repository.js";
 import * as refreshTokenRepository from "../repositories/refresh_token.repositories.js"
@@ -32,9 +31,9 @@ const login = async (email, password) => {
     const refreshToken = JWT.generateRefreshToken(user);
 
     const tokenHash = crypto
-    .createHash("sha256")
-    .update(refreshToken)
-    .digest("hex")
+        .createHash("sha256")
+        .update(refreshToken)
+        .digest("hex")
 
     const expiresAt = new Date(
         Date.now() + 30 * 24 * 60 * 60 * 1000
@@ -62,67 +61,76 @@ const register = async (name, email, password) => {
     const existingUser = await authRepository.findUserByEmail(email);
 
     if (existingUser) {
-        throw new ConflictError("Email is already registered");
+        return;
     }
 
-    const hashedPassword = await bcrypt.hash(
-        password, 
-        10
-    );
-    
-    const user = await authRepository.registerUser(
-        name,
-        email,
-        hashedPassword
-    );
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const emailVerificationToken = crypto
-    .randomBytes(32)
-    .toString("hex")
+        .randomBytes(32)
+        .toString("hex");
 
     const emailVerificationTokenHash = crypto
-    .createHash("sha256")
-    .update(emailVerificationToken)
-    .digest("hex")
+        .createHash("sha256")
+        .update(emailVerificationToken)
+        .digest("hex");
 
     const expiresAt = new Date(
         Date.now() + 24 * 60 * 60 * 1000
     );
 
-    await authRepository.userVerification(
-        user.id,
-        emailVerificationTokenHash,
-        expiresAt,
-    )
+    let user;
 
-    resend.emails.send({
-    from: process.env.MAIL_FROM,
-    to: user.email,
-    subject: "Verify your email",
-    html: `
-        <p>Click the link below to verify your email:</p>
-        <a href="${process.env.FRONTEND_URL}/verify-email?token=${emailVerificationToken}">
-            Verify your email
-        </a>
-        <p>This link expires in 24 hours.</p>
-    `
-    }).catch((error) => {
-        return console.error("Failed to send email verification:", error);
-    });
+    try {
+        user = await authRepository.registerUserWithVerification(
+            name,
+            email,
+            hashedPassword,
+            emailVerificationTokenHash,
+            expiresAt
+        );
+    } catch (error) {
+        if (error.code === "23505") {
+            return;
+        }
+        throw error;
+    }
+
+    try {
+        await resend.emails.send({
+            from: process.env.MAIL_FROM,
+            to: user.email,
+            subject: "Verify your email",
+            html: `
+                <p>Click the link below to verify your email:</p>
+
+                <a href="${process.env.FRONTEND_URL}/verify-email?token=${emailVerificationToken}">
+                    Verify your email
+                </a>
+
+                <p>This link expires in 24 hours.</p>
+            `
+        });
+    } catch (error) {
+        console.error(
+            "Failed to send email verification:",
+            error
+        );
+    }
 
     return {
         user: {
             name: user.name,
-            email: user.email,
+            email: user.email
         }
     };
-}
+};
 
 const verifyEmail = async (token) => {
     const tokenHash = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
 
     await authRepository.verifyEmail(tokenHash);
 }
@@ -133,20 +141,23 @@ const resendVerification = async (email) => {
     if (!user || user.email_verified_at) return;
 
     const token = crypto.
-    randomBytes(32).
-    toString("hex");
+        randomBytes(32).
+        toString("hex");
 
     const tokenHash = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
 
     const expiresAt = new Date(
         Date.now() + 24 * 60 * 60 * 1000
     );
 
-    await authRepository.invalidateUserVerificationTokens(user.id);
-    await authRepository.userVerification(user.id, tokenHash, expiresAt);
+    await authRepository.replaceUserVerificationToken(
+        user.id,
+        tokenHash,
+        expiresAt
+    )
 
     resend.emails.send({
         from: process.env.MAIL_FROM,
@@ -158,8 +169,8 @@ const resendVerification = async (email) => {
             <p>This link expires in 24 hours.</p>
         `
     }).catch((error) =>
-        console.error("Failed to send email verification:", error 
-    ));
+        console.error("Failed to send email verification:", error
+        ));
 };
 
 const refresh = async (refreshToken) => {
@@ -171,7 +182,7 @@ const refresh = async (refreshToken) => {
         .digest("hex");
 
     const storedToken =
-        await refreshTokenRepository.findRefreshTokenByHash(tokenHash);
+        await refreshTokenRepository.deleteRefreshToken(tokenHash);
 
     if (!storedToken) {
         throw new UnauthorizedError("Invalid refresh token");
@@ -195,16 +206,39 @@ const refresh = async (refreshToken) => {
         role: user.role
     });
 
-    return accessToken;
+    const newRefreshToken = JWT.generateRefreshToken({
+        id: user.id,
+        role: user.role
+    });
+
+    const newTokenHash = crypto
+        .createHash("sha256")
+        .update(newRefreshToken)
+        .digest("hex");
+
+    const expiresAt = new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000
+    );
+
+    await refreshTokenRepository.createRefreshToken(
+        user.id,
+        newTokenHash,
+        expiresAt
+    );
+
+    return {
+        accessToken,
+        refreshToken: newRefreshToken
+    };
 };
 
 const logout = async (token) => {
     JWT.verifyRefreshToken(token);
 
     const tokenHash = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
 
     const deleted =
         await refreshTokenRepository.deleteRefreshToken(tokenHash);
@@ -230,13 +264,13 @@ const forgotPassword = async (email) => {
     const usedAt = null;
 
     const passwordResetToken = crypto
-    .randomBytes(32)
-    .toString("hex");
+        .randomBytes(32)
+        .toString("hex");
 
     const passwordResetTokenHash = crypto
-    .createHash("sha256")
-    .update(passwordResetToken)
-    .digest("hex");
+        .createHash("sha256")
+        .update(passwordResetToken)
+        .digest("hex");
 
     await authRepository.invalidateUserResetTokens(user.id);
 

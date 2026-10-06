@@ -1,4 +1,12 @@
 import swaggerJSDoc from "swagger-jsdoc";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+
+const routesGlob = path
+    .join(currentDir, "../routes/*.js")
+    .replace(/\\/g, "/");
 
 const swaggerOption = {
     definition: {
@@ -29,7 +37,7 @@ const swaggerOption = {
     },
 
     apis: [
-        "src/routes/*.js"
+        routesGlob
     ],
 
     failOnErrors: true
