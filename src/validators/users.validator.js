@@ -7,7 +7,9 @@ export const createUserSchema = z.object({
         .max(50, "Name cannot exceed 50 characters"),
 
     email: z
-        .email("Invalid email address"),
+        .email("Invalid email address")
+        .trim()
+        .toLowerCase(),
 
     password: z
         .string()
@@ -25,7 +27,9 @@ export const registerSchema = z.object({
         .max(50, "Name cannot exceed 50 characters"),
 
     email: z
-        .email("Invalid email address"),
+        .email("Invalid email address")
+        .trim()
+        .toLowerCase(),
 
     password: z
         .string()
@@ -38,12 +42,17 @@ export const verifyEmailSchema = z.object({
 }).strict();
 
 export const resendVerificationSchema = z.object({
-    email: z.email("Invalid email address")
+    email: z
+        .email("Invalid email address")
+        .trim()
+        .toLowerCase(),
 }).strict();
 
 export const loginSchema = z.object({
     email: z
-        .email("Invalid email address"),
+        .email("Invalid email address")
+        .trim()
+        .toLowerCase(),
 
     password: z
         .string()
@@ -66,6 +75,8 @@ export const logoutSchema = z.object({
 export const forgotPasswordSchema = z.object({
     email: z
         .email("Invalid email address")
+        .trim()        
+        .toLowerCase()
 }).strict();
 
 export const resetPasswordSchema = z.object({
@@ -84,7 +95,9 @@ export const updateUserSchema = z.object({
         .max(50, "Name cannot exceed 50 characters"),
 
     email: z
-        .email("Invalid email address"),
+        .email("Invalid email address")
+        .trim()
+        .toLowerCase(),
 
     password: z
         .string()

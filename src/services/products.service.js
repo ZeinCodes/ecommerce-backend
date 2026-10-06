@@ -1,4 +1,5 @@
 import NotFoundError from "../errors/NotFoundError.js";
+import BadRequestError from "../errors/BadRequestError.js";
 import productsRepository from "../repositories/products.repository.js";
 
 const getAllProducts = async (
@@ -83,6 +84,12 @@ const deleteProduct = async (id) => {
 };
 
 const getProductImages = async (productId) => {
+    const product = await productsRepository.findProductById(productId);
+
+    if (!product) {
+        throw new NotFoundError("Product not found");
+    }
+
     const result = await productsRepository.getImages(
         productId
     )
@@ -91,6 +98,16 @@ const getProductImages = async (productId) => {
 } 
 
 const addImageToProduct = async (productId, files) => {
+    if (!files || files.length === 0) {
+        throw new BadRequestError("At least one image is required");
+    }
+
+    const product = await productsRepository.findProductById(productId);
+
+    if (!product) {
+        throw new NotFoundError("Product not found");
+    }
+
     const result = await productsRepository.postImages(
         productId, 
         files
@@ -103,6 +120,11 @@ const deleteProductImage = async (productId, imageId) => {
         productId,
         imageId
     )
+
+    if (!result) {
+        throw new NotFoundError("Image not found");
+    }
+
     return result;
 }
 

@@ -67,6 +67,10 @@ const insertCartItem = async (userId, productId, quantity) => {
             quantity
          )
          VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, product_id) WHERE deleted_at IS NULL
+         DO UPDATE SET
+            quantity = cart_items.quantity + EXCLUDED.quantity,
+            updated_at = NOW()
          RETURNING *`,
         [userId, productId, quantity]
     );

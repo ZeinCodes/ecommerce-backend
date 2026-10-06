@@ -7,8 +7,8 @@ describe("POST /auth/login", () => {
         const response = await request(app)
             .post("/auth/login")
             .send({
-                email: "hadimosta@gmail.com",
-                password: "hadiaust"
+                email: "zenkahil@gmail.com",
+                password: "***"
             });
 
         expect(response.status).toBe(200);

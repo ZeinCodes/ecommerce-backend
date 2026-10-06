@@ -1,5 +1,5 @@
 import UnauthorizedError from "../errors/UnauthorizedError.js";
-import { verifyRefreshToken } from "../utils/jwt.js";
+import { verifyAccessToken } from "../utils/jwt.js";
 
 const authenticate = (req, res, next) => {
     try {
@@ -15,7 +15,7 @@ const authenticate = (req, res, next) => {
             throw new UnauthorizedError("Invalid authorization header");
         }
 
-        const decoded = verifyRefreshToken(token);
+        const decoded = verifyAccessToken(token);
 
         req.user = decoded;
 
