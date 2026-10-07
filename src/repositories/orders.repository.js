@@ -124,7 +124,8 @@ const getOrderItems = async (
 };
 
 const createOrder = async (
-    userId
+    userId,
+    addressId
 ) => {
     const client = await pool.connect();
 
@@ -148,6 +149,42 @@ const createOrder = async (
         if (cartItems.length === 0) {
             throw new BadRequestError("Cart is empty");
         }
+
+        const addressResult = addressId
+            ? await client.query(
+                `SELECT *
+                 FROM addresses
+                 WHERE id = $1
+                 AND user_id = $2
+                 AND deleted_at IS NULL`,
+                [addressId, userId]
+            )
+            : await client.query(
+                `SELECT *
+                 FROM addresses
+                 WHERE user_id = $1
+                 AND is_default = TRUE
+                 AND deleted_at IS NULL`,
+                [userId]
+            );
+
+        const address = addressResult.rows[0];
+
+        if (!address) {
+            throw addressId
+                ? new NotFoundError("Shipping address not found")
+                : new BadRequestError("Shipping address is required");
+        }
+
+        const shippingSnapshot = {
+            full_name: address.full_name,
+            phone: address.phone,
+            street: address.street,
+            city: address.city,
+            state: address.state,
+            postal_code: address.postal_code,
+            country: address.country
+        };
 
         const uniqueProductIds = [
             ...new Set(
@@ -221,13 +258,17 @@ const createOrder = async (
         const orderResult = await client.query(
             `INSERT INTO orders (
                 user_id,
-                total_price
+                total_price,
+                shipping_address_id,
+                shipping_address
              )
-             VALUES ($1, $2)
+             VALUES ($1, $2, $3, $4::jsonb)
              RETURNING *`,
             [
                 userId,
-                totalPrice
+                totalPrice,
+                address.id,
+                JSON.stringify(shippingSnapshot)
             ]
         );
 
