@@ -1,6 +1,7 @@
 import express from "express";
 import ordersController from "../controllers/orders.controller.js";
 import {
+    createOrderSchema,
     updateOrderStatusSchema
 } from "../validators/orders.validator.js";
 import authenticate from "../middlewares/authentication.js";
@@ -120,23 +121,36 @@ ordersRouter.get(
  *   post:
  *     summary: Create a new order from the current user's cart
  *     tags: [Orders]
- *     description: Converts the authenticated user's cart into an order. Cart must not be empty; stock is re-validated at checkout and the cart is cleared on success.
+ *     description: Converts the authenticated user's cart into an order shipped to the given address, or to the default address if none is given. Cart must not be empty; stock is re-validated at checkout and the cart is cleared on success.
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               address_id:
+ *                 type: string
+ *                 format: uuid
  *
  *     responses:
  *       201:
  *         description: Order created successfully
  *       400:
- *         description: Cart is empty, or insufficient stock
+ *         description: Cart is empty, insufficient stock, or no shipping address
  *       401:
  *         description: Unauthorized
  *       404:
- *         description: Product not found
+ *         description: Product or address not found
+ *       422:
+ *         description: Validation failed
  */
 ordersRouter.post(
     "/orders",
     authenticate,
+    validate(createOrderSchema),
     ordersController.createOrder
 );
 
