@@ -13,6 +13,7 @@ import productsRouter from "./routes/products.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import ordersRouter from "./routes/orders.routes.js";
 import addressesRouter from "./routes/addresses.routes.js";
+import productReviewsRouter from "./routes/product-reviews.routes.js";
 
 import errorHandler from "./middlewares/errorHandler.js";
 
@@ -45,6 +46,7 @@ app.use(productsRouter);
 app.use(cartRouter)
 app.use(ordersRouter);
 app.use(addressesRouter);
+app.use(productReviewsRouter);
 
 app.get("/openapi.json", (req, res) => {
   res.json(swaggerSpec);
