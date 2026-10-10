@@ -15,36 +15,36 @@ const findAllProducts = async (
 ) => {
     const offset = (page - 1) * limit;
 
-    const conditions = ["deleted_at IS NULL"];
+    const conditions = ["p.deleted_at IS NULL"];
     const values = [];
 
     if (category_id) {
         values.push(category_id);
-        conditions.push(`category_id = $${values.length}`);
+        conditions.push(`p.category_id = $${values.length}`);
     }
 
     if (min_price !== undefined) {
         values.push(min_price);
-        conditions.push(`price >= $${values.length}`);
+        conditions.push(`p.price >= $${values.length}`);
     }
 
     if (max_price !== undefined) {
         values.push(max_price);
-        conditions.push(`price <= $${values.length}`);
+        conditions.push(`p.price <= $${values.length}`);
     }
 
     if (name) {
         values.push(`%${name}%`);
-        conditions.push(`name ILIKE $${values.length}`);
+        conditions.push(`p.name ILIKE $${values.length}`);
     }
 
     const whereClause = conditions.join(" AND ");
 
     const allowedSortFields = {
-        created_at: "created_at",
-        name: "name",
-        price: "price",
-        stock: "stock"
+        created_at: "p.created_at",
+        name: "p.name",
+        price: "p.price",
+        stock: "p.stock"
     };
 
     const sortColumn = allowedSortFields[sortBy] || "created_at";
@@ -57,10 +57,30 @@ const findAllProducts = async (
     const countValues = [...values];
 
     const productsResult = await pool.query(
-        `SELECT *
-         FROM products
+        `SELECT
+            p.id,
+            p.category_id,
+            p.name,
+            p.description,
+            p.price,
+            pr.average_rating,
+            COALESCE(pr.reviews_count, 0) AS reviews_count,
+            p.stock,
+            p.sku,
+            p.created_at,
+            p.updated_at
+         FROM products p
+         LEFT JOIN (
+            SELECT
+                product_id,
+                ROUND(AVG(rating), 2) AS average_rating,
+                COUNT(*) AS reviews_count
+            FROM product_reviews
+            WHERE deleted_at IS NULL
+            GROUP BY product_id
+         ) pr ON pr.product_id = p.id
          WHERE ${whereClause}
-         ORDER BY ${sortColumn} ${orderDirection}, id DESC
+         ORDER BY ${sortColumn} ${orderDirection}, p.id DESC
          LIMIT $${limitPlaceholder}
          OFFSET $${offsetPlaceholder}`,
         productsValues
@@ -68,7 +88,7 @@ const findAllProducts = async (
 
     const countResult = await pool.query(
         `SELECT COUNT(*)
-         FROM products
+         FROM products p
          WHERE ${whereClause}`,
         countValues
     );
@@ -81,10 +101,30 @@ const findAllProducts = async (
 
 const findProductById = async (id) => {
     const result = await pool.query(
-        `SELECT *
-         FROM products
-         WHERE id = $1
-         AND deleted_at IS NULL`,
+        `SELECT
+            p.id,
+            p.category_id,
+            p.name, 
+            p.description,
+            p.price,
+            pr.average_rating,
+            COALESCE(pr.reviews_count, 0) AS reviews_count,
+            p.stock,
+            p.sku,
+            p.created_at,
+            p.updated_at 
+         FROM products p 
+         LEFT JOIN (
+            SELECT 
+                product_id,
+                ROUND(AVG(rating), 2) AS average_rating,
+                COUNT(*) AS reviews_count
+            FROM product_reviews 
+            WHERE deleted_at IS NULL
+            GROUP BY product_id 
+         ) pr ON pr.product_id = p.id
+         WHERE p.id = $1
+         AND p.deleted_at IS NULL`,
         [id]
     );
 
@@ -93,10 +133,30 @@ const findProductById = async (id) => {
 
 const findProductByName = async (name) => {
     const result = await pool.query(
-        `SELECT *
-         FROM products
-         WHERE name = $1
-         AND deleted_at IS NULL`,
+        `SELECT
+            p.id,
+            p.category_id,
+            p.name, 
+            p.description,
+            p.price,
+            pr.average_rating,
+            COALESCE(pr.reviews_count, 0) AS reviews_count,
+            p.stock,
+            p.sku,
+            p.created_at,
+            p.updated_at 
+         FROM products p 
+         LEFT JOIN (
+            SELECT 
+                product_id,
+                ROUND(AVG(rating), 2) AS average_rating,
+                COUNT(*) AS reviews_count
+            FROM product_reviews 
+            WHERE deleted_at IS NULL
+            GROUP BY product_id 
+         ) pr ON pr.product_id = p.id
+         WHERE p.name = $1
+         AND p.deleted_at IS NULL`,
         [name]
     );
 
@@ -278,18 +338,18 @@ const deleteImage = async (productId, imageId) => {
         return null;
     }
 
+    await pool.query(
+        `DELETE FROM product_images
+            WHERE product_id = $1
+            AND id = $2`,
+        [productId, imageId]
+    );
+
     const publicId = getPublicId(image.image_url);
 
     if (publicId) {
         await cloudinary.uploader.destroy(publicId);
     }
-
-    await pool.query(
-        `DELETE FROM product_images
-         WHERE product_id = $1
-         AND id = $2`,
-        [productId, imageId]
-    );
 
     return image;
 };
