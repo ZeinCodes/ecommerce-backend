@@ -14,6 +14,7 @@ import cartRouter from "./routes/cart.routes.js";
 import ordersRouter from "./routes/orders.routes.js";
 import addressesRouter from "./routes/addresses.routes.js";
 import productReviewsRouter from "./routes/product-reviews.routes.js";
+import wishlistRouter from "./routes/wishlist.routes.js";
 
 import errorHandler from "./middlewares/errorHandler.js";
 
@@ -41,15 +42,16 @@ app.use(express.json({ limit: "100kb" }));
 
 app.use(authRouter);
 app.use(usersRouter);
-app.use(categoriesRouter); 
+app.use(categoriesRouter);
 app.use(productsRouter);
 app.use(cartRouter)
 app.use(ordersRouter);
 app.use(addressesRouter);
 app.use(productReviewsRouter);
+app.use(wishlistRouter);
 
 app.get("/openapi.json", (req, res) => {
-  res.json(swaggerSpec);
+    res.json(swaggerSpec);
 });
 
 app.use(
