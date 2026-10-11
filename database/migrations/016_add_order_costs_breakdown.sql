@@ -1,0 +1,4 @@
+ALTER TABLE orders
+ADD COLUMN subtotal NUMERIC(10, 2),
+ADD COLUMN shipping_cost NUMERIC(10, 2),
+ADD COLUMN tax_amount NUMERIC(10, 2);

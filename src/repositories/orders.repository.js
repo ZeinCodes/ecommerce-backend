@@ -1,4 +1,8 @@
 import pool from "../db/database.js";
+import {
+    SHIPPING_COST_CENTS,
+    TAX_RATE
+} from "../config/orderPricing.js";
 import BadRequestError from "../errors/BadRequestError.js";
 import NotFoundError from "../errors/NotFoundError.js";
 
@@ -240,32 +244,53 @@ const createOrder = async (
             }
         }
 
-        let totalCents = 0;
+        let subtotalCents = 0;
 
         for (const item of cartItems) {
             const product = products.find(
-                product =>
-                    product.id === item.product_id
+                product => product.id === item.product_id
             );
 
-            totalCents +=
-                Math.round(Number(product.price) * 100) *
-                item.quantity;
+            const unitPriceCents = Math.round(
+                Number(product.price) * 100
+            );
+
+            subtotalCents += unitPriceCents * item.quantity;
         }
 
+        const taxCents = Math.round(
+            subtotalCents * TAX_RATE
+        );
+
+        const shippingCents = SHIPPING_COST_CENTS;
+
+        const totalCents =
+            subtotalCents +
+            taxCents +
+            shippingCents;
+
+        const subtotal = subtotalCents / 100;
+        const taxAmount = taxCents / 100;
+        const shippingCost = shippingCents / 100;
         const totalPrice = totalCents / 100;
 
         const orderResult = await client.query(
             `INSERT INTO orders (
                 user_id,
+                subtotal,
+                shipping_cost,
+                tax_amount,
                 total_price,
                 shipping_address_id,
                 shipping_address
-             )
-             VALUES ($1, $2, $3, $4::jsonb)
-             RETURNING *`,
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+            RETURNING *`,
             [
                 userId,
+                subtotal,
+                shippingCost,
+                taxAmount,
                 totalPrice,
                 address.id,
                 JSON.stringify(shippingSnapshot)
