@@ -73,9 +73,11 @@ const getOrderItems = async (req, res, next) => {
 const createOrder = async (req, res, next) => {
     try {
         const userId = req.user.id;
+        const addressId = req.validated?.body?.address_id;
 
         const order = await ordersService.createOrder(
-            userId
+            userId,
+            addressId
         );
 
         return res.status(201).json({

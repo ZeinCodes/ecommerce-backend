@@ -1,4 +1,5 @@
 import express from "express";
+import validateUuidParam from "../middlewares/validateUuidParam.js";
 import addressesController from "../controllers/addresses.controller.js";
 import authenticate from "../middlewares/authentication.js";
 import validate from "../middlewares/validate.js";
@@ -8,6 +9,8 @@ import {
 } from "../validators/addresses.validator.js";
 
 const addressesRouter = express.Router();
+
+addressesRouter.param("id", validateUuidParam);
 
 /**
  * @swagger

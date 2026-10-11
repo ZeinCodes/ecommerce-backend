@@ -1,4 +1,5 @@
 import express from "express";
+import validateUuidParam from "../middlewares/validateUuidParam.js";
 import productsController from "../controllers/products.controller.js";
 import validate from "../middlewares/validate.js";
 import authenticate from "../middlewares/authentication.js";
@@ -13,6 +14,10 @@ import {
 import upload from "../middlewares/upload.js";
 
 const productsRouter = express.Router();
+
+productsRouter.param("id", validateUuidParam);
+productsRouter.param("productId", validateUuidParam);
+productsRouter.param("imageId", validateUuidParam);
 
 /**
  * @swagger

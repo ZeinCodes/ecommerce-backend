@@ -138,13 +138,16 @@ const createOrder = async (
 
         const cartResult = await client.query(
             `SELECT
-                product_id,
-                quantity
-             FROM cart_items
-             WHERE user_id = $1
-             AND deleted_at IS NULL
-             ORDER BY product_id
-             FOR UPDATE`,
+                ci.product_id,
+                ci.quantity
+             FROM cart_items ci
+             JOIN products p
+                ON p.id = ci.product_id
+                AND p.deleted_at IS NULL
+             WHERE ci.user_id = $1
+             AND ci.deleted_at IS NULL
+             ORDER BY ci.product_id
+             FOR UPDATE OF ci`,
             [userId]
         );
 

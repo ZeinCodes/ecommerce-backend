@@ -176,30 +176,16 @@ const resendVerification = async (email) => {
 const refresh = async (refreshToken) => {
     const payload = JWT.verifyRefreshToken(refreshToken);
 
-    const tokenHash = crypto
-        .createHash("sha256")
-        .update(refreshToken)
-        .digest("hex");
-
-    const storedToken =
-        await refreshTokenRepository.deleteRefreshToken(tokenHash);
-
-    if (!storedToken) {
-        throw new UnauthorizedError("Invalid refresh token");
-    }
-
-    if (
-        storedToken.expires_at &&
-        new Date(storedToken.expires_at) <= new Date()
-    ) {
-        throw new UnauthorizedError("Invalid refresh token");
-    }
-
     const user = await authRepository.findUserById(payload.id);
 
     if (!user) {
         throw new UnauthorizedError("Invalid refresh token");
     }
+
+    const tokenHash = crypto
+        .createHash("sha256")
+        .update(refreshToken)
+        .digest("hex");
 
     const accessToken = JWT.generateAccessToken({
         id: user.id,
@@ -220,11 +206,24 @@ const refresh = async (refreshToken) => {
         Date.now() + 30 * 24 * 60 * 60 * 1000
     );
 
-    await refreshTokenRepository.createRefreshToken(
+    const outcome = await refreshTokenRepository.rotateRefreshToken(
+        tokenHash,
         user.id,
         newTokenHash,
         expiresAt
     );
+
+    if (outcome === "missing") {
+        // A validly signed token that is no longer stored was already used
+        // (or revoked). Treat it as possible theft and end every session.
+        await authRepository.revokeUserRefreshTokens(user.id);
+
+        throw new UnauthorizedError("Invalid refresh token");
+    }
+
+    if (outcome === "expired") {
+        throw new UnauthorizedError("Invalid refresh token");
+    }
 
     return {
         accessToken,
@@ -261,8 +260,6 @@ const forgotPassword = async (email) => {
         Date.now() + 30 * 60 * 1000
     );
 
-    const usedAt = null;
-
     const passwordResetToken = crypto
         .randomBytes(32)
         .toString("hex");
@@ -274,11 +271,10 @@ const forgotPassword = async (email) => {
 
     await authRepository.invalidateUserResetTokens(user.id);
 
-    const savedToken = await authRepository.forgotPassword(
+    const savedToken = await authRepository.createPasswordResetToken(
         user.id,
         passwordResetTokenHash,
-        tokenExpireAt,
-        usedAt
+        tokenExpireAt
     );
 
     resend.emails.send({

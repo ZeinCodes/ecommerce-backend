@@ -42,12 +42,11 @@ const verifyEmail = async (req, res, next) => {
     try {
         const { token } = req.validated.body;
 
-        const result = await authService.verifyEmail(token);
+        await authService.verifyEmail(token);
 
         res.status(200).json({
             success: true,
-            message: "Email verified ✔",
-            result
+            message: "Email verified ✔"
         })
     } catch (error) {
         next(error);
