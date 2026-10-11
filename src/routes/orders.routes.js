@@ -1,4 +1,5 @@
 import express from "express";
+import validateUuidParam from "../middlewares/validateUuidParam.js";
 import ordersController from "../controllers/orders.controller.js";
 import {
     createOrderSchema,
@@ -12,6 +13,8 @@ import {
 } from "../validators/pagination.validation.js";
 
 const ordersRouter = express.Router();
+
+ordersRouter.param("id", validateUuidParam);
 
 /**
  * @swagger

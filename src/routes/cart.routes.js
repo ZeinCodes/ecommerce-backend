@@ -1,4 +1,5 @@
 import express from "express";
+import validateUuidParam from "../middlewares/validateUuidParam.js";
 import * as cartController from "../controllers/cart.controller.js";
 import authenticate from "../middlewares/authentication.js";
 import validate from "../middlewares/validate.js";
@@ -8,6 +9,8 @@ import {
 } from "../validators/cart.validator.js";
 
 const cartRouter = express.Router();
+
+cartRouter.param("id", validateUuidParam);
 
 /**
  * @swagger

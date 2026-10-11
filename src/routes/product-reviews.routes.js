@@ -1,4 +1,5 @@
 import express from "express";
+import validateUuidParam from "../middlewares/validateUuidParam.js";
 import reviewsController from "../controllers/product-reviews.controller.js";
 import validate from "../middlewares/validate.js";
 import authenticate from "../middlewares/authentication.js";
@@ -11,6 +12,9 @@ import {
 } from "../validators/pagination.validation.js";
 
 const productReviewsRouter = express.Router();
+
+productReviewsRouter.param("productId", validateUuidParam);
+productReviewsRouter.param("reviewId", validateUuidParam);
 
 /**
  * @swagger

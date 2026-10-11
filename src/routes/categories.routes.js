@@ -1,4 +1,5 @@
 import express from "express";
+import validateUuidParam from "../middlewares/validateUuidParam.js";
 import categoryController from "../controllers/categories.controllers.js";
 import validate from "../middlewares/validate.js";
 import authenticate from "../middlewares/authentication.js";
@@ -12,6 +13,8 @@ import {
 } from "../validators/pagination.validation.js";
 
 const categoriesRouter = express.Router();
+
+categoriesRouter.param("id", validateUuidParam);
 
 /**
  * @swagger

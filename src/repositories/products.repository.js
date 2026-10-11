@@ -47,7 +47,7 @@ const findAllProducts = async (
         stock: "p.stock"
     };
 
-    const sortColumn = allowedSortFields[sortBy] || "created_at";
+    const sortColumn = allowedSortFields[sortBy] || "p.created_at";
     const orderDirection = (order && order.toString().toUpperCase() === "DESC") ? "DESC" : "ASC";
 
     const limitPlaceholder = values.length + 1;
@@ -126,38 +126,6 @@ const findProductById = async (id) => {
          WHERE p.id = $1
          AND p.deleted_at IS NULL`,
         [id]
-    );
-
-    return result.rows[0];
-};
-
-const findProductByName = async (name) => {
-    const result = await pool.query(
-        `SELECT
-            p.id,
-            p.category_id,
-            p.name, 
-            p.description,
-            p.price,
-            pr.average_rating,
-            COALESCE(pr.reviews_count, 0) AS reviews_count,
-            p.stock,
-            p.sku,
-            p.created_at,
-            p.updated_at 
-         FROM products p 
-         LEFT JOIN (
-            SELECT 
-                product_id,
-                ROUND(AVG(rating), 2) AS average_rating,
-                COUNT(*) AS reviews_count
-            FROM product_reviews 
-            WHERE deleted_at IS NULL
-            GROUP BY product_id 
-         ) pr ON pr.product_id = p.id
-         WHERE p.name = $1
-         AND p.deleted_at IS NULL`,
-        [name]
     );
 
     return result.rows[0];
@@ -245,22 +213,49 @@ const updateProduct = async (fields, updates, id) => {
 };
 
 const deleteProduct = async (id) => {
-    const result = await pool.query(
-        `UPDATE products
-         SET
-            deleted_at = NOW(),
-            updated_at = NOW()
-         WHERE id = $1
-         AND deleted_at IS NULL
-         RETURNING *`,
-        [id]
-    );
-    
-    if (!result.rows[0]) {
-        throw new NotFoundError("Product not found")
-    }
+    const client = await pool.connect();
 
-    return result.rows[0];
+    try {
+        await client.query("BEGIN");
+
+        const result = await client.query(
+            `UPDATE products
+             SET
+                deleted_at = NOW(),
+                updated_at = NOW()
+             WHERE id = $1
+             AND deleted_at IS NULL
+             RETURNING *`,
+            [id]
+        );
+
+        if (!result.rows[0]) {
+            await client.query("ROLLBACK");
+            throw new NotFoundError("Product not found");
+        }
+
+        // A deleted product must not stay in anyone's cart,
+        // otherwise checkout could never succeed for those users.
+        await client.query(
+            `UPDATE cart_items
+             SET
+                deleted_at = NOW(),
+                updated_at = NOW()
+             WHERE product_id = $1
+             AND deleted_at IS NULL`,
+            [id]
+        );
+
+        await client.query("COMMIT");
+
+        return result.rows[0];
+    } catch (error) {
+        // ROLLBACK is harmless if it was already issued above
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 const getImages = async (productId) => {
@@ -348,7 +343,16 @@ const deleteImage = async (productId, imageId) => {
     const publicId = getPublicId(image.image_url);
 
     if (publicId) {
-        await cloudinary.uploader.destroy(publicId);
+        try {
+            await cloudinary.uploader.destroy(publicId);
+        } catch (error) {
+            // The DB row is already gone; do not fail the request,
+            // but keep a trace so the orphaned file can be cleaned up.
+            console.error(
+                `Failed to delete Cloudinary image ${publicId}:`,
+                error
+            );
+        }
     }
 
     return image;
@@ -357,7 +361,6 @@ const deleteImage = async (productId, imageId) => {
 const productsRepository = {
     findAllProducts,
     findProductById,
-    findProductByName,
     addNewProduct,
     updateProduct,
     deleteProduct,

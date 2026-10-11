@@ -2,6 +2,26 @@ import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
 import UnauthorizedError from "../errors/UnauthorizedError.js";
 
+const getAccessSecret = () => {
+    const secret = process.env.JWT_SECRET;
+
+    if (!secret) {
+        throw new Error("JWT_SECRET is not set");
+    }
+
+    return secret;
+};
+
+const getRefreshSecret = () => {
+    const secret = process.env.JWT_REFRESH_SECRET;
+
+    if (!secret) {
+        throw new Error("JWT_REFRESH_SECRET is not set");
+    }
+
+    return secret;
+};
+
 const generateAccessToken = (user) => {
     const token = jwt.sign(
         {
@@ -9,7 +29,7 @@ const generateAccessToken = (user) => {
             role: user.role,
             type: "access"
         },
-        process.env.JWT_SECRET,
+        getAccessSecret(),
         {
             expiresIn: "15m",
             jwtid: crypto.randomUUID()
@@ -23,7 +43,7 @@ const verifyAccessToken = (token) => {
     try {
         const decoded = jwt.verify(
             token,
-            process.env.JWT_SECRET
+            getAccessSecret()
         );
 
         if (decoded.type !== "access") {
@@ -43,7 +63,7 @@ const generateRefreshToken = (user) => {
             role: user.role,
             type: "refresh"
         },
-        process.env.JWT_SECRET,
+        getRefreshSecret(),
         {
             expiresIn: "30d",
             jwtid: crypto.randomUUID()
@@ -57,7 +77,7 @@ const verifyRefreshToken = (token) => {
     try {
         const decoded = jwt.verify(
             token,
-            process.env.JWT_SECRET
+            getRefreshSecret()
         );
 
         if (decoded.type !== "refresh") {

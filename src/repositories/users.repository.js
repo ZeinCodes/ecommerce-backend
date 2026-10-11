@@ -261,32 +261,6 @@ const findUserByEmail = async (
     return result.rows[0];
 };
 
-const registerUser = async (
-    name,
-    email,
-    passwordHash
-) => {
-    const role = "user";
-
-    const result = await pool.query(
-        `INSERT INTO users (
-            name,
-            email,
-            password_hash,
-            role
-        )
-        VALUES ($1, $2, $3, $4)
-        RETURNING
-            id,
-            name,
-            email,
-            role,
-            created_at`,
-        [name, email, passwordHash, role]
-    )
-    return result.rows[0];
-}
-
 const replaceUserVerificationToken = async (
     userId,
     tokenHash,
@@ -363,25 +337,23 @@ const verifyEmail = async (tokenHash) => {
     }
 };
 
-const forgotPassword = async (
+const createPasswordResetToken = async (
     userId,
-    hashToken,
-    expireAt,
-    usedAt
+    tokenHash,
+    expiresAt
 ) => {
     const result = await pool.query(
         `INSERT INTO password_reset_tokens (
             user_id,
             token_hash,
-            expires_at,
-            used_at
+            expires_at
          )
-         VALUES ($1, $2, $3, $4)
+         VALUES ($1, $2, $3)
          RETURNING
             user_id,
             expires_at,
             created_at`,
-        [userId, hashToken, expireAt, usedAt]
+        [userId, tokenHash, expiresAt]
     )
     return result.rows[0]
 }
@@ -457,8 +429,7 @@ export {
     updateUser,
     deleteUser,
     findUserByEmail,
-    registerUser,
-    forgotPassword,
+    createPasswordResetToken,
     invalidateUserResetTokens,
     resetPassword,
     replaceUserVerificationToken,

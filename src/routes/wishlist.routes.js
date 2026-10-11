@@ -1,10 +1,13 @@
 
 import express from "express";
+import validateUuidParam from "../middlewares/validateUuidParam.js";
 
 import * as wishlistController from "../controllers/wishlist.controller.js";
 import authenticate from "../middlewares/authentication.js";
 
 const wishlistRouter = express.Router();
+
+wishlistRouter.param("productId", validateUuidParam);
 
 /**
  * @swagger

@@ -39,16 +39,6 @@ const getProductById = async (id) => {
     };
 };
 
-const getProductByName = async (name) => {
-    const result = await productsRepository.findProductByName(name);
-
-    if (!result) {
-        throw new NotFoundError("Product not found");
-    }
-
-    return result;
-};
-
 const postProduct = async (
     category_id,
     name,
@@ -131,7 +121,6 @@ const deleteProductImage = async (productId, imageId) => {
 const productsService = {
     getAllProducts,
     getProductById,
-    getProductByName,
     postProduct,
     patchProduct,
     deleteProduct,
