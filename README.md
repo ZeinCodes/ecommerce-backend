@@ -7,7 +7,7 @@
 
 A production-minded REST API for an online store, built with **Node.js, Express 5 and PostgreSQL**. It covers the full shopping flow: accounts with email verification, a product catalog with images, carts, transactional order placement, reviews, wishlists and admin tools.
 
-**Live API reference:** <https://ecommerce-backend-six-chi.vercel.app/api-reference)>
+**Live API reference:** <https://ecommerce-backend-six-chi.vercel.app/api-reference>
 
 <img width="1891" height="906" alt="Screenshot" src="https://github.com/user-attachments/assets/b3860207-14a1-4eeb-95bb-4c61095f4dc1" />
 ---
