@@ -3,10 +3,10 @@ import crypto from "node:crypto";
 import UnauthorizedError from "../errors/UnauthorizedError.js";
 
 const getAccessSecret = () => {
-    const secret = process.env.JWT_SECRET;
+    const secret = process.env.JWT_ACCESS_SECRET;
 
     if (!secret) {
-        throw new Error("JWT_SECRET is not set");
+        throw new Error("JWT_ACCESS_SECRET is not set");
     }
 
     return secret;

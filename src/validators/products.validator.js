@@ -15,7 +15,11 @@ export const createProductSchema = z.object({
 
     price: z
         .number()
-        .nonnegative("Price cannot be negative"),
+        .nonnegative("Price cannot be negative")
+        .refine(
+            (value) => Math.round(value * 100) / 100 === value,
+            "Price cannot have more than 2 decimal places"
+        ),
 
     stock: z
         .number()

@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 const REQUIRED_ENV = [
     "DB_URL",
-    "JWT_SECRET",
+    "JWT_ACCESS_SECRET",
     "JWT_REFRESH_SECRET"
 ];
 
