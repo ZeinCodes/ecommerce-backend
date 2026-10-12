@@ -1,531 +1,411 @@
 # E-commerce API
 
-A RESTful e-commerce backend built with **Node.js, Express.js, and PostgreSQL**.
+[![Backend Tests](https://github.com/ZeinCodes/ecommerce-backend/actions/workflows/tests.yml/badge.svg)](https://github.com/ZeinCodes/ecommerce-backend/actions/workflows/tests.yml)
+![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
 
-The API provides authentication, authorization, product and category management, user management, order processing, pagination, filtering, searching, sorting, validation, centralized error handling, database transactions, and API documentation with Scalar/OpenAPI.
+A production-minded REST API for an online store, built with **Node.js, Express 5 and PostgreSQL**. It covers the full shopping flow: accounts with email verification, a product catalog with images, carts, transactional order placement, reviews, wishlists and admin tools.
 
----
+**Live API reference:** <https://YOUR-DEPLOYMENT-URL/api-reference> <!-- TODO: replace with your deployed URL -->
 
-## Features
-
-* RESTful API architecture
-* User authentication with JWT
-* Role-based authorization
-* User management
-* Category management
-* Product management
-* Order creation and management
-* Order ownership protection
-* Pagination
-* Filtering
-* Searching
-* Sorting
-* Request validation with Zod
-* Centralized error handling
-* Custom application errors
-* PostgreSQL transactions
-* Database indexes
-* Soft deletion
-* Password validation
-* Security headers with Helmet
-* API documentation with Scalar / OpenAPI
+<!-- TODO: add a screenshot of the API reference page, e.g. ![API reference](docs/api-reference.png) -->
 
 ---
 
-## Tech Stack
+## Table of contents
 
-* **Node.js**
-* **Express.js**
-* **PostgreSQL**
-* **pg** — PostgreSQL client for Node.js
-* **Zod** — Request validation
-* **JSON Web Token (JWT)** — Authentication
-* **bcrypt** — Password hashing
-* **Helmet** — HTTP security headers
-* **Scalar** — API documentation
-* **Nodemon** — Development server
+- [Highlights](#highlights)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting started](#getting-started)
+- [Environment variables](#environment-variables)
+- [API overview](#api-overview)
+- [Example requests](#example-requests)
+- [Testing and CI](#testing-and-ci)
+- [Design decisions](#design-decisions)
+- [Deployment](#deployment)
+- [Project structure](#project-structure)
 
 ---
 
-## Project Structure
+## Highlights
 
-```text
-ecommerce/
-│
-├── database/
-│   ├── migrations/
-│   ├── seeds/
-│   └── schema.sql
-│
-├── src/
-│   ├── config/
-│   │   └── swagger.js
-│   │
-│   ├── controllers/
-│   ├── services/
-│   ├── repositories/
-│   ├── routes/
-│   ├── middlewares/
-│   ├── validators/
-│   ├── errors/
-│   ├── utils/
-│   ├── db/
-│   ├── app.js
-│   └── server.js
-│
-├── .env
-├── .gitignore
-├── package.json
-└── README.md
-```
+**Authentication and accounts**
+- Register, log in and log out with JWT access tokens (15 minutes) and rotating refresh tokens (30 days).
+- Refresh, email verification and password reset tokens are stored as hashes, never in plain text.
+- Email verification is required before login; emails are sent through Resend.
+- Role-based access control (`user`, `admin`) plus ownership checks, so users can only touch their own data.
+
+**Shopping**
+- Products and categories with pagination, search, price filtering and sorting.
+- Product images uploaded to Cloudinary (JPEG, PNG or WebP, up to 5 MB each, 3 per upload).
+- Cart, saved shipping addresses, wishlist and product reviews.
+- Orders with a price breakdown (subtotal, tax, shipping) and an admin-managed status lifecycle.
+
+**Engineering**
+- Layered architecture: routes, controllers, services and repositories.
+- Request validation with Zod (strict schemas reject unknown fields).
+- Centralized error handling with custom error classes and sanitized 500 responses.
+- Security: Helmet, a CORS allowlist, per-route rate limiting, a 100 kb body limit and bcrypt password hashing.
+- Soft deletion, database indexes and 17 versioned SQL migrations.
+- Graceful shutdown, a `/health` endpoint and a scheduled cleanup of expired tokens.
+- Interactive API documentation generated from OpenAPI annotations (Scalar).
+- Automated tests running in CI on every push and pull request.
+
+---
+
+## Tech stack
+
+| Area | Technology |
+| --- | --- |
+| Runtime and framework | Node.js, Express 5 |
+| Database | PostgreSQL (`pg`) |
+| Validation | Zod |
+| Authentication | JSON Web Tokens, bcrypt |
+| Security | Helmet, CORS, express-rate-limit |
+| File uploads | Multer and Cloudinary |
+| Email | Resend |
+| API docs | swagger-jsdoc and Scalar (OpenAPI 3) |
+| Testing | Vitest and Supertest |
+| CI | GitHub Actions |
 
 ---
 
 ## Architecture
 
-The application follows a layered architecture:
+Each request flows through a fixed set of layers, and each layer has a single job.
 
 ```text
 Client
-  ↓
-Routes
-  ↓
-Middleware
-  ↓
-Controllers
-  ↓
-Services
-  ↓
-Repositories
-  ↓
+  │
+  ▼
+Routes          endpoints, rate limiting, auth and validation middleware
+  │
+  ▼
+Controllers     translate HTTP requests into service calls and responses
+  │
+  ▼
+Services        business rules (stock checks, ownership, token flows)
+  │
+  ▼
+Repositories    SQL queries and transactions
+  │
+  ▼
 PostgreSQL
 ```
 
-### Routes
-
-Define the API endpoints and the middleware used by each endpoint.
-
-### Middleware
-
-Handles cross-cutting concerns such as:
-
-* Authentication
-* Authorization
-* Validation
-* Error handling
-* Security
-
-### Controllers
-
-Handle HTTP requests and responses.
-
-### Services
-
-Contain the application's business logic.
-
-### Repositories
-
-Handle communication with PostgreSQL and execute database queries.
-
 ---
 
-## Database
+## Getting started
 
-The application uses PostgreSQL.
+### Prerequisites
 
-### Main Tables
+- Node.js 22 or newer
+- PostgreSQL (with the `psql` command available on your path)
+- Optional for full functionality: a [Cloudinary](https://cloudinary.com) account (images) and a [Resend](https://resend.com) account (emails)
 
-```text
-users
-categories
-products
-orders
-order_items
-```
-
-### Relationships
-
-```text
-users
-  │
-  └── orders
-          │
-          └── order_items
-                    │
-                    └── products
-                              │
-                              └── categories
-```
-
-The project uses database migrations to manage schema changes.
-
----
-
-## Installation
-
-### 1. Clone the repository
+### 1. Clone and install
 
 ```bash
-git clone <your-repository-url>
-cd ecommerce
-```
-
-### 2. Install dependencies
-
-```bash
+git clone https://github.com/ZeinCodes/ecommerce-backend.git
+cd ecommerce-backend
 npm install
 ```
 
-### 3. Create the environment file
-
-Create a `.env` file in the project root:
-
-```env
-PORT=3000
-
-DATABASE_URL=your_database_url
-
-JWT_SECRET=your_jwt_secret
-
-JWT_EXPIRES_IN=your_expiration
-```
-
-Do not commit your `.env` file to Git.
-
-### 4. Create the database
-
-Create a PostgreSQL database and configure the connection using your environment variables.
-
-### 5. Run the migrations
-
-Run the project's database migrations in order.
-
-```text
-001_inital_migration.sql
-002_add_partial_unique_index_for_user_email.sql
-003_add_created_at_and_unique_constraint_to_order_items.sql
-004_add_partial_unique_indexes_to_products_and_categories.sql
-004_creating_partial_indexies.sql
-```
-
-### 6. Start the development server
+### 2. Configure the environment
 
 ```bash
-npm run dev
+cp .env.example .env
 ```
 
-The API will run on:
+Fill in the values (see [Environment variables](#environment-variables)). Generate strong JWT secrets with:
 
-```text
-http://localhost:3000
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
+
+### 3. Create the database
+
+Create an empty database, point `DB_URL` at it (the same value you put in `.env`), then apply the migrations in order:
+
+```bash
+createdb ecommerce
+export DB_URL="postgres://user:password@localhost:5432/ecommerce"
+
+for file in database/migrations/*.sql; do
+  psql "$DB_URL" -f "$file"
+done
+```
+
+`database/schema.sql` contains the full resulting schema if you prefer a single file.
+
+**Optional, development only:** load sample users, categories and products.
+
+```bash
+psql "$DB_URL" -f database/seeds/001_users.sql
+psql "$DB_URL" -f database/seeds/002_categories.sql
+psql "$DB_URL" -f database/seeds/003_products.sql
+```
+
+> Never run the seed files against a production database. They create a sample admin account.
+
+### 4. Run the server
+
+```bash
+npm run dev     # development, restarts on file changes
+npm start       # production
+```
+
+The API runs at `http://localhost:3000` and the interactive documentation at `http://localhost:3000/api-reference`.
+
+### Available scripts
+
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Start the server with nodemon |
+| `npm start` | Start the server |
+| `npm test` / `npm run test:run` | Run the test suite once |
+| `npm run test:watch` | Run tests in watch mode |
 
 ---
 
-# Authentication
+## Environment variables
 
-Authentication uses **JWT Bearer tokens**.
+The server refuses to start if a required variable is missing.
 
-### Login
-
-```http
-POST /auth/login
-```
-
-Request:
-
-```json
-{
-  "email": "john@example.com",
-  "password": "Password123"
-}
-```
-
-Successful response:
-
-```json
-{
-  "success": true,
-  "message": "Welcome Back John",
-  "token": "your-jwt-token"
-}
-```
-
-Use the returned token in protected endpoints:
-
-```http
-Authorization: Bearer <token>
-```
+| Variable | Required | Description |
+| --- | --- | --- |
+| `DB_URL` | Always | PostgreSQL connection string |
+| `JWT_ACCESS_SECRET` | Always | Secret used to sign access tokens |
+| `JWT_REFRESH_SECRET` | Always | Secret used to sign refresh tokens (use a different value) |
+| `FRONTEND_URL` | Production | Base URL used in verification and reset email links |
+| `MAIL_FROM` | Production | Sender address for outgoing email |
+| `RESEND_API_KEY` | Production | Resend API key |
+| `CLOUDINARY_CLOUD_NAME` | Production | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Production | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Production | Cloudinary API secret |
+| `CORS_ORIGIN` | Production | Comma-separated list of allowed browser origins |
+| `NODE_ENV` | Optional | Set to `production` to enforce the production requirements and strict database TLS |
+| `PORT` | Optional | Port to listen on (default `3000`) |
+| `DB_CA_CERT` | Optional | CA certificate for databases that require a custom certificate |
 
 ---
 
-# Authorization
+## API overview
 
-The API supports role-based authorization.
+Interactive documentation with request and response schemas is served at **`/api-reference`**, and the raw OpenAPI document at **`/openapi.json`**.
 
-Available roles:
+**Access levels:** *Public* needs no token. *User* needs a valid access token (`Authorization: Bearer <token>`). *Owner* means the resource owner or an admin. *Admin* means admin only.
 
-```text
-user
-admin
-```
+### Auth
 
-Administrative operations require an authenticated user with the `admin` role.
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| POST | `/auth/register` | Public | Create an account and send a verification email |
+| POST | `/auth/verify-email` | Public | Verify an email address with a token |
+| POST | `/auth/resend-verification` | Public | Send a new verification email |
+| POST | `/auth/login` | Public | Log in and receive access and refresh tokens |
+| POST | `/auth/refresh` | Public | Exchange a refresh token for a new token pair |
+| POST | `/auth/logout` | Public | Revoke a refresh token |
+| POST | `/auth/forgot-password` | Public | Request a password reset email |
+| POST | `/auth/reset-password` | Public | Set a new password with a reset token |
 
----
+### Users
 
-# API Endpoints
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/users` | Admin | List users (paginated) |
+| POST | `/users` | Admin | Create a user |
+| GET | `/users/:id` | Owner | Get a user |
+| PATCH | `/users/:id` | Owner | Update a user |
+| DELETE | `/users/:id` | Owner | Delete a user |
 
-## Authentication
+### Categories
 
-| Method | Endpoint      | Authentication | Description |
-| ------ | ------------- | -------------- | ----------- |
-| POST   | `/auth/login` | No             | Login       |
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/categories` | Public | List categories (pagination, `name` filter) |
+| GET | `/categories/:id` | Public | Get a category |
+| POST | `/categories` | Admin | Create a category |
+| PATCH | `/categories/:id` | Admin | Update a category |
+| DELETE | `/categories/:id` | Admin | Delete a category |
 
-## Users
+### Products
 
-| Method | Endpoint     | Authentication | Description |
-| ------ | ------------ | -------------- | ----------- |
-| GET    | `/users`     | Admin          | Get users   |
-| GET    | `/users/:id` | Admin          | Get user    |
-| POST   | `/users`     | Admin          | Create user |
-| PATCH  | `/users/:id` | Owner          | Update user |
-| DELETE | `/users/:id` | Owner          | Delete user |
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/products` | Public | List products. Query: `page`, `limit`, `name`, `category_id`, `min_price`, `max_price`, `sortBy` (`created_at`, `name`, `price`, `stock`), `order` (`asc`, `desc`) |
+| GET | `/products/:id` | Public | Get a product |
+| POST | `/products` | Admin | Create a product |
+| PATCH | `/products/:id` | Admin | Update a product |
+| DELETE | `/products/:id` | Admin | Delete a product |
+| GET | `/products/:productId/images` | Public | List product images |
+| POST | `/products/:productId/images` | Admin | Upload up to 3 images (`multipart/form-data`, field `images`) |
+| DELETE | `/products/:productId/images/:imageId` | Admin | Delete an image |
 
-## Categories
+### Reviews
 
-| Method | Endpoint          | Authentication | Description     |
-| ------ | ----------------- | -------------- | --------------- |
-| GET    | `/categories`     | No             | Get categories  |
-| GET    | `/categories/:id` | No             | Get category    |
-| POST   | `/categories`     | Admin          | Create category |
-| PATCH  | `/categories/:id` | Admin          | Update category |
-| DELETE | `/categories/:id` | Admin          | Delete category |
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/products/:productId/reviews` | Public | List reviews for a product (paginated) |
+| GET | `/products/:productId/reviews/:reviewId` | Public | Get a review |
+| POST | `/products/:productId/reviews` | User | Write a review |
+| PATCH | `/products/:productId/reviews/:reviewId` | User | Edit a review |
+| DELETE | `/products/:productId/reviews/:reviewId` | User | Delete a review |
 
-## Products
+### Cart, wishlist and addresses
 
-| Method | Endpoint        | Authentication | Description    |
-| ------ | --------------- | -------------- | -------------- |
-| GET    | `/products`     | No             | Get products   |
-| GET    | `/products/:id` | No             | Get product    |
-| POST   | `/products`     | Admin          | Create product |
-| PATCH  | `/products/:id` | Admin          | Update product |
-| DELETE | `/products/:id` | Admin          | Delete product |
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/cart` | User | Get the current cart |
+| POST | `/cart/items` | User | Add a product to the cart |
+| PATCH | `/cart/items/:id` | User | Change an item quantity |
+| DELETE | `/cart/items/:id` | User | Remove an item |
+| GET | `/wishlist` | User | List wishlist items |
+| POST | `/wishlist/:productId` | User | Add a product to the wishlist |
+| DELETE | `/wishlist/:productId` | User | Remove a product from the wishlist |
+| GET | `/addresses` | User | List saved addresses |
+| GET | `/addresses/:id` | User | Get an address |
+| POST | `/addresses` | User | Create an address |
+| PATCH | `/addresses/:id` | User | Update an address |
+| DELETE | `/addresses/:id` | User | Delete an address |
 
-## Orders
+### Orders
 
-| Method | Endpoint             | Authentication | Description         |
-| ------ | -------------------- | -------------- | ------------------- |
-| GET    | `/orders`            | Yes            | Get orders          |
-| GET    | `/orders/:id`        | Yes            | Get order           |
-| GET    | `/orders/:id/items`  | Yes            | Get order items     |
-| POST   | `/orders`            | Yes            | Create order        |
-| PATCH  | `/orders/:id/status` | Admin          | Update order status |
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| POST | `/orders` | User | Place an order from the current cart |
+| GET | `/orders` | User | List your orders (admins see all orders) |
+| GET | `/orders/:id` | User | Get an order |
+| GET | `/orders/:id/items` | User | List the items in an order |
+| PATCH | `/orders/:id/status` | Admin | Set status: `pending`, `processing`, `shipped`, `delivered` or `cancelled` |
 
----
+### Utility
 
-# Pagination
-
-Collection endpoints support pagination.
-
-Example:
-
-```http
-GET /products?page=1&limit=20
-```
-
-Available parameters include:
-
-```text
-page
-limit
-```
-
----
-
-# Filtering
-
-Products can be filtered by category and price.
-
-Example:
-
-```http
-GET /products?category_id=<category-id>&min_price=10&max_price=100
-```
-
----
-
-# Searching
-
-Products can be searched by name.
-
-Example:
-
-```http
-GET /products?name=phone
-```
-
-The database uses a PostgreSQL trigram index to improve partial text searches.
+| Method | Endpoint | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/health` | Public | Health check |
+| GET | `/openapi.json` | Public | OpenAPI document |
+| GET | `/api-reference` | Public | Interactive API documentation |
 
 ---
 
-# Sorting
+## Example requests
 
-Products can be sorted by supported fields.
+**Register, then log in** (verify your email first; login is blocked until you do):
 
-Example:
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Jane Doe", "email": "jane@example.com", "password": "a-strong-password"}'
 
-```http
-GET /products?sortBy=price&order=asc
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "jane@example.com", "password": "a-strong-password"}'
 ```
 
-Supported sorting fields include:
+**Browse products:**
 
-```text
-created_at
-name
-price
-stock
+```bash
+curl "http://localhost:3000/products?name=shirt&min_price=10&max_price=50&sortBy=price&order=asc&limit=10"
 ```
 
----
+**Add to cart and place an order** (replace `$TOKEN` with your access token):
 
-# Validation
+```bash
+curl -X POST http://localhost:3000/cart/items \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"product_id": "<product-uuid>", "quantity": 2}'
 
-Request validation is handled using **Zod**.
+curl -X POST http://localhost:3000/orders \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"address_id": "<address-uuid>"}'
+```
 
-Invalid requests return a validation error containing field-specific messages.
-
-Example:
+Errors use a consistent shape:
 
 ```json
 {
   "success": false,
-  "message": "Validation failed",
-  "error": {
-    "email": "Invalid email address",
-    "password": "Password must be at least 8 characters"
-  }
+  "message": "Human-readable description of what went wrong",
+  "errors": []
 }
 ```
 
 ---
 
-# Error Handling
-
-The API uses centralized error handling and custom application errors.
-
-Common HTTP status codes:
-
-```text
-400  Bad Request
-401  Unauthorized
-403  Forbidden
-404  Not Found
-409  Conflict
-422  Validation Failed
-500  Internal Server Error
-```
-
----
-
-# Database Transactions
-
-Order creation uses a PostgreSQL transaction to ensure that related operations succeed or fail together.
-
-The order creation process includes:
-
-```text
-BEGIN
-  ↓
-Check products
-  ↓
-Lock products
-  ↓
-Check stock
-  ↓
-Create order
-  ↓
-Create order items
-  ↓
-Update product stock
-  ↓
-COMMIT
-```
-
-If an operation fails:
-
-```text
-ROLLBACK
-```
-
-This prevents partially created orders and inconsistent stock.
-
----
-
-# Security
-
-The API includes several security measures:
-
-* JWT authentication
-* Role-based authorization
-* Password hashing
-* Password validation
-* Helmet security headers
-* Input validation with Zod
-* Ownership checks for protected resources
-* Parameterized PostgreSQL queries
-
----
-
-## API Documentation
-
-The API is documented using **OpenAPI** and displayed through **Scalar**.
-
-Once the server is running, open the interactive docs at:
-
-```text
-https://ecommerce-backend-6bcwy5xbo-24lights.vercel.app/api-reference
-```
-
-Or view the raw OpenAPI specification (JSON) at:
-
-```text
-https://ecommerce-backend-6bcwy5xbo-24lights.vercel.app/openapi.json
-```
-
-The documentation lets you browse all available endpoints, view request/response schemas, and send live test requests directly from the browser.
----
-
-# Development
-
-Start the development server:
+## Testing and CI
 
 ```bash
-npm run dev
+npm test
 ```
 
-The project uses Nodemon to automatically restart the server when files change.
+The suite uses Vitest and Supertest and covers authentication flows, route-level access control (public, user, owner and admin), product and order endpoints, and core app behavior such as health checks, the OpenAPI document and malformed input. Tests run against the Express app with mocked services, so they need **no database or external services**.
+
+GitHub Actions runs the suite on every push and pull request to `main` (see [`.github/workflows/tests.yml`](.github/workflows/tests.yml)).
 
 ---
 
-# Future Improvements
+## Design decisions
 
-Possible future improvements include:
+- **Orders are transactional.** Placing an order locks the cart and product rows, checks stock, snapshots prices and the shipping address, decrements stock, creates the order and clears the cart in a single transaction, so concurrent checkouts cannot oversell. Cancelling an order restores stock.
+- **Money is calculated in cents** and converted at the end, which avoids floating-point rounding errors. Tax (10%) and flat shipping are defined in `src/config/orderPricing.js`.
+- **Refresh tokens rotate.** Each refresh issues a new token and invalidates the old one. Only hashes are stored, and a six-hour job removes expired and used tokens.
+- **Login is protected twice.** One limiter works per IP and another per email address, with successful logins not counted, which slows credential stuffing without locking out real users.
+- **Safe error responses.** Known errors return clear messages; database constraint violations map to 400, 404 or 409; anything unexpected is logged server-side and returns a generic 500.
+- **Soft deletion** keeps historical data such as past orders intact.
+- **Strict validation.** Zod schemas reject unknown fields, so clients cannot sneak extra data into updates.
 
-* Automated tests
-* Production deployment
-* Refresh tokens
-* Rate limiting
-* Advanced logging
-* CI/CD
-* Production database configuration
-* Docker support
+---
+
+## Deployment
+
+The project is configured for Vercel: `api/index.js` exports the Express app and `vercel.json` routes all requests to it. It also runs as a normal Node.js server (`npm start`) on any host that provides a PostgreSQL database.
+
+Deployment checklist:
+
+1. Set every variable from the [environment table](#environment-variables) in your host's dashboard, with `NODE_ENV=production` and new, random JWT secrets.
+2. Apply the migrations to the production database. Do not run the seed files.
+3. Create your admin account manually.
+4. Check `/health` and `/api-reference` on the deployed URL.
+5. On serverless platforms, the in-process token cleanup job does not run. Trigger `cleanupExpiredTokens` from a scheduled job instead. Rate limits are kept in memory per instance, so use a shared store such as Redis if you need global limits.
+
+---
+
+## Project structure
+
+```text
+.
+├── .github/workflows/     CI pipeline
+├── api/                   Serverless entry point
+├── database/
+│   ├── migrations/        Versioned SQL migrations (001-017)
+│   ├── seeds/             Sample data for development
+│   └── schema.sql         Full schema
+├── src/
+│   ├── config/            Swagger, Cloudinary, order pricing
+│   ├── controllers/       HTTP layer
+│   ├── services/          Business logic
+│   ├── repositories/      SQL queries and transactions
+│   ├── routes/            Endpoints with OpenAPI annotations
+│   ├── middlewares/       Auth, rate limiting, validation, errors, uploads
+│   ├── validators/        Zod schemas
+│   ├── errors/            Custom error classes
+│   ├── jobs/              Scheduled token cleanup
+│   ├── db/                PostgreSQL pool
+│   ├── utils/             JWT helpers
+│   ├── app.js             Express app
+│   └── server.js          Startup, env validation, graceful shutdown
+├── tests/                 Vitest and Supertest suites
+├── vercel.json
+└── package.json
+```
 
 ---
 
 ## Author
 
-**Zein**
-
-Backend / Software Engineering Project
+Built by [ZeinCodes](https://github.com/ZeinCodes).
