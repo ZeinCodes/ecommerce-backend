@@ -1,3 +1,5 @@
+import { fileTypeFromBuffer } from "file-type";
+
 import NotFoundError from "../errors/NotFoundError.js";
 import BadRequestError from "../errors/BadRequestError.js";
 import productsRepository from "../repositories/products.repository.js";
@@ -85,11 +87,21 @@ const getProductImages = async (productId) => {
     )
 
     return result;
-} 
+}
 
 const addImageToProduct = async (productId, files) => {
     if (!files || files.length === 0) {
         throw new BadRequestError("At least one image is required");
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    for (const file of files) {
+        const detected = await fileTypeFromBuffer(file.buffer);
+
+        if (!detected || !allowedTypes.includes(detected.mime)) {
+            throw new BadRequestError("Only JPEG, PNG or WebP images are allowed");
+        }
     }
 
     const product = await productsRepository.findProductById(productId);
@@ -98,8 +110,16 @@ const addImageToProduct = async (productId, files) => {
         throw new NotFoundError("Product not found");
     }
 
+    const existingImages = await productsRepository.getImages(productId);
+
+    if (existingImages.length + files.length > 3) {
+        throw new BadRequestError(
+            "A product can have at most 3 images"
+        );
+    }
+
     const result = await productsRepository.postImages(
-        productId, 
+        productId,
         files
     );
     return result;

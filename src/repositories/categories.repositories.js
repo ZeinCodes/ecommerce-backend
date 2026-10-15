@@ -1,4 +1,5 @@
 import pool from "../db/database.js";
+import ConflictError from "../errors/ConflictError.js";
 
 const findAllCategories = async (
     page,
@@ -112,22 +113,65 @@ const updateCategory = async (
     return result.rows[0];
 };
 
-const deleteCategory = async (
-    id
-) => {
-    const result = await pool.query(
-        `UPDATE categories
-         SET
-            deleted_at = NOW(),
-            updated_at = NOW()
-         WHERE id = $1
-         AND deleted_at IS NULL
-         RETURNING *`,
-        [id]
-    );
 
-    return result.rows[0];
+const deleteCategory = async (id) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        // Lock the category to prevent concurrent product assignment.
+        const categoryResult = await client.query(
+            `SELECT id
+             FROM categories
+             WHERE id = $1
+             AND deleted_at IS NULL
+             FOR UPDATE`,
+            [id]
+        );
+
+        if (!categoryResult.rows[0]) {
+            await client.query("ROLLBACK");
+            return null;
+        }
+
+        // Check whether active products still use this category.
+        const productsResult = await client.query(
+            `SELECT 1
+             FROM products
+             WHERE category_id = $1
+             AND deleted_at IS NULL
+             LIMIT 1`,
+            [id]
+        );
+
+        if (productsResult.rowCount > 0) {
+            throw new ConflictError(
+                "Cannot delete a category that has active products"
+            );
+        }
+
+        const result = await client.query(
+            `UPDATE categories
+             SET deleted_at = NOW(),
+                 updated_at = NOW()
+             WHERE id = $1
+             AND deleted_at IS NULL
+             RETURNING *`,
+            [id]
+        );
+
+        await client.query("COMMIT");
+
+        return result.rows[0];
+    } catch (error) {
+        await client.query("ROLLBACK").catch(() => { });
+        throw error;
+    } finally {
+        client.release();
+    }
 };
+
 
 const categoriesRepository = {
     findAllCategories,
