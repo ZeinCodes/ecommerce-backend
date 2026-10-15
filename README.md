@@ -38,7 +38,7 @@ A production-minded REST API for an online store, built with **Node.js, Express 
 
 **Shopping**
 - Products and categories with pagination, search, price filtering and sorting.
-- Product images uploaded to Cloudinary (JPEG, PNG or WebP, up to 5 MB each, 3 per upload).
+- Product images uploaded to Cloudinary (JPEG, PNG or WebP, up to 1.5 MB each, 3 per upload).
 - Cart, saved shipping addresses, wishlist and product reviews.
 - Orders with a price breakdown (subtotal, tax, shipping) and an admin-managed status lifecycle.
 
@@ -137,17 +137,19 @@ for file in database/migrations/*.sql; do
 done
 ```
 
-`database/schema.sql` contains the full resulting schema if you prefer a single file.
+The SQL migrations in `database/migrations/` are the source of truth for the database schema. Apply them in order to create the complete database structure.
 
-**Optional, development only:** load sample users, categories and products.
+### Optional Development Seed Data
+
+To populate the database with sample data for local development, run the seed scripts in filename order:
 
 ```bash
-psql "$DB_URL" -f database/seeds/001_users.sql
-psql "$DB_URL" -f database/seeds/002_categories.sql
-psql "$DB_URL" -f database/seeds/003_products.sql
+for file in database/seeds/*.sql; do
+  psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$file"
+done
 ```
 
-> Never run the seed files against a production database. They create a sample admin account.
+**Warning:** The seed scripts create sample data, including an administrator account. Review the scripts before running them. Never run development seed scripts against a production database. Running them multiple times may cause duplicate records or errors if they are not designed to be repeatable.
 
 ### 4. Run the server
 
@@ -383,7 +385,7 @@ Deployment checklist:
 ├── database/
 │   ├── migrations/        Versioned SQL migrations (001-017)
 │   ├── seeds/             Sample data for development
-│   └── schema.sql         Full schema
+│   └── schema.sql         Initial schema snapshot (if applicable)
 ├── src/
 │   ├── config/            Swagger, Cloudinary, order pricing
 │   ├── controllers/       HTTP layer

@@ -2,9 +2,7 @@ import NotFoundError from "../errors/NotFoundError.js";
 import * as usersRepository from "../repositories/users.repository.js";
 import bcrypt from "bcrypt";
 import crypto from "node:crypto";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendMail, verificationEmailHtml } from "../utils/mailer.js";
 
 const getUsers = async (page, limit) => {
     return await usersRepository.findAllUsers(page, limit);
@@ -92,22 +90,18 @@ const patchUser = async (updates, id) => {
             expiresAt
         );
 
-        resend.emails.send({
-            from: process.env.MAIL_FROM,
+        // The email change is already saved, so a send failure is logged
+        // rather than turned into a 500; the user can use "resend verification".
+        await sendMail({
             to: user.email,
             subject: "Verify your email",
-            html: `
-                <p>Click the link below to verify your email:</p>
-                <a href="${process.env.FRONTEND_URL}/verify-email?token=${token}">Verify your email</a>
-                <p>This link expires in 24 hours.</p>
-            `
-        }).catch((error) =>
-            console.error("Failed to send email verification:", error)
-        );
+            html: verificationEmailHtml(token)
+        });
     }
 
     return user;
 };
+
 
 const deleteUser = async (id) => {
     const user = await usersRepository.deleteUser(id);

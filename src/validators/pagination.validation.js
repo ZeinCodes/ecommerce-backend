@@ -47,7 +47,16 @@ export const productsQuerySchema = paginationSchema.extend({
         "desc"
     ])
         .default("desc")
-}).strict();
+}).strict().refine(
+    (data) =>
+        data.min_price === undefined ||
+        data.max_price === undefined ||
+        data.min_price <= data.max_price,
+    {
+        message: "min_price cannot exceed max_price",
+        path: ["max_price"]
+    }
+);
 
 export const categoriesQuerySchema = paginationSchema.extend({
     name: z

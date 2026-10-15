@@ -257,8 +257,6 @@ productsRouter.delete(
  *   get:
  *     summary: Get all images for a product
  *     tags: [Products]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: productId
@@ -270,10 +268,6 @@ productsRouter.delete(
  *     responses:
  *       200:
  *         description: Product images retrieved successfully
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden
  *       404:
  *         description: Product not found
  */

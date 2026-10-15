@@ -131,6 +131,7 @@ const findProductById = async (id) => {
     return result.rows[0];
 };
 
+
 const addNewProduct = async (
     category_id,
     name,
@@ -139,29 +140,50 @@ const addNewProduct = async (
     stock,
     sku
 ) => {
-    const result = await pool.query(
-        `INSERT INTO products (
-            category_id,
-            name,
-            description,
-            price,
-            stock,
-            sku
-        )
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING *`,
-        [
-            category_id,
-            name,
-            description,
-            price,
-            stock,
-            sku
-        ]
-    );
+    const client = await pool.connect();
 
-    return result.rows[0];
+    try {
+        await client.query("BEGIN");
+
+        const categoryResult = await client.query(
+            `SELECT id
+             FROM categories
+             WHERE id = $1
+             AND deleted_at IS NULL
+             FOR UPDATE`,
+            [category_id]
+        );
+
+        if (!categoryResult.rows[0]) {
+            throw new NotFoundError("Category not found");
+        }
+
+        const result = await client.query(
+            `INSERT INTO products (
+                category_id,
+                name,
+                description,
+                price,
+                stock,
+                sku
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *`,
+            [category_id, name, description, price, stock, sku]
+        );
+
+        await client.query("COMMIT");
+
+        return result.rows[0];
+    } catch (error) {
+        await client.query("ROLLBACK").catch(() => { });
+        throw error;
+    } finally {
+        client.release();
+    }
 };
+
+
 
 const updateProduct = async (fields, updates, id) => {
     const allowedFields = {
@@ -178,7 +200,7 @@ const updateProduct = async (fields, updates, id) => {
     }
 
     const invalidFields = fields.filter(
-        field => !allowedFields[field]
+        (field) => !allowedFields[field]
     );
 
     if (invalidFields.length > 0) {
@@ -191,26 +213,64 @@ const updateProduct = async (fields, updates, id) => {
         .map((field, index) => `${allowedFields[field]} = $${index + 1}`)
         .join(", ");
 
-    const values = fields.map(field => updates[field]);
+    const values = fields.map((field) => updates[field]);
     values.push(id);
 
-    const result = await pool.query(
-        `UPDATE products
-         SET
-            ${setQuery},
+    const updateQuery = `
+        UPDATE products
+        SET ${setQuery},
             updated_at = NOW()
-         WHERE id = $${values.length}
-         AND deleted_at IS NULL
-         RETURNING *`,
-        values
-    );
+        WHERE id = $${values.length}
+        AND deleted_at IS NULL
+        RETURNING *
+    `;
 
-    if (!result.rows[0]) {
-        throw new NotFoundError("Product not found")
+    // If the category is not changing, keep the simple update path.
+    if (!fields.includes("category_id")) {
+        const result = await pool.query(updateQuery, values);
+
+        if (!result.rows[0]) {
+            throw new NotFoundError("Product not found");
+        }
+
+        return result.rows[0];
     }
 
-    return result.rows[0];
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const categoryResult = await client.query(
+            `SELECT id
+             FROM categories
+             WHERE id = $1
+             AND deleted_at IS NULL
+             FOR UPDATE`,
+            [updates.category_id]
+        );
+
+        if (!categoryResult.rows[0]) {
+            throw new NotFoundError("Category not found");
+        }
+
+        const result = await client.query(updateQuery, values);
+
+        if (!result.rows[0]) {
+            throw new NotFoundError("Product not found");
+        }
+
+        await client.query("COMMIT");
+
+        return result.rows[0];
+    } catch (error) {
+        await client.query("ROLLBACK").catch(() => { });
+        throw error;
+    } finally {
+        client.release();
+    }
 };
+
 
 const deleteProduct = async (id) => {
     const client = await pool.connect();
@@ -295,30 +355,112 @@ const uploadBuffer = (buffer) =>
         stream.end(buffer);
     });
 
+const MAX_IMAGES_PER_PRODUCT = 3;
+
+// Best-effort removal of files that were uploaded but never saved in the DB.
+const destroyUploads = async (uploads) => {
+    const results = await Promise.allSettled(
+        uploads.map((upload) =>
+            cloudinary.uploader.destroy(upload.public_id)
+        )
+    );
+
+    results.forEach((result, index) => {
+        if (result.status === "rejected") {
+            console.error(
+                `Failed to clean up Cloudinary image ${uploads[index].public_id}:`,
+                result.reason
+            );
+        }
+    });
+};
+
 const postImages = async (productId, files) => {
-    const uploads = await Promise.all(
+    // allSettled so we know exactly which files reached Cloudinary,
+    // even when one of the uploads fails.
+    const settled = await Promise.allSettled(
         files.map((file) => uploadBuffer(file.buffer))
     );
 
-    const imageUrls = uploads.map((upload) => upload.secure_url);
+    const uploads = settled
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value);
 
-    const placeholders = imageUrls.map((_, index) => {
-        return `($1, $${index + 2})`;
-    });
-
-    const values = [productId, ...imageUrls];
-
-    const result = await pool.query(
-        `INSERT INTO product_images (
-            product_id,
-            image_url
-         )
-         VALUES ${placeholders.join(", ")}
-         RETURNING *`,
-        values
+    const failedUpload = settled.find(
+        (result) => result.status === "rejected"
     );
 
-    return result.rows;
+    if (failedUpload) {
+        await destroyUploads(uploads);
+        throw failedUpload.reason;
+    }
+
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        // Lock the product row so concurrent uploads can't exceed the limit.
+        const productResult = await client.query(
+            `SELECT id
+             FROM products
+             WHERE id = $1
+             AND deleted_at IS NULL
+             FOR UPDATE`,
+            [productId]
+        );
+
+        if (!productResult.rows[0]) {
+            throw new NotFoundError("Product not found");
+        }
+
+        const countResult = await client.query(
+            `SELECT COUNT(*)
+             FROM product_images
+             WHERE product_id = $1`,
+            [productId]
+        );
+
+        const existingCount = Number(countResult.rows[0].count);
+
+        if (existingCount + uploads.length > MAX_IMAGES_PER_PRODUCT) {
+            throw new BadRequestError(
+                `A product can have at most ${MAX_IMAGES_PER_PRODUCT} images`
+            );
+        }
+
+        const placeholders = uploads.map((_, index) => {
+            return `($1, $${index + 2})`;
+        });
+
+        const values = [
+            productId,
+            ...uploads.map((upload) => upload.secure_url)
+        ];
+
+        const result = await client.query(
+            `INSERT INTO product_images (
+                product_id,
+                image_url
+             )
+             VALUES ${placeholders.join(", ")}
+             RETURNING *`,
+            values
+        );
+
+        await client.query("COMMIT");
+
+        return result.rows;
+    } catch (error) {
+        await client.query("ROLLBACK").catch(() => { });
+
+        // The DB write failed, so the files on Cloudinary would be orphaned.
+        await destroyUploads(uploads);
+
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 const getPublicId = (url) => {

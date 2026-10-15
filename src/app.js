@@ -2,8 +2,10 @@ import express from "express";
 
 import helmet from "helmet";
 import cors from "cors";
+import crypto from "node:crypto";
 
 import swaggerSpec from "./config/swagger.js";
+import { cleanupExpiredTokens } from "./jobs/cleanupTokens.js";
 
 import { apiReference } from "@scalar/express-api-reference";
 
@@ -65,6 +67,38 @@ app.use(
 
 app.get("/health", (req, res) => {
     res.status(200).json({ success: true, status: "ok" });
+});
+
+const isValidCronAuth = (provided, expected) => {
+    const a = crypto.createHash("sha256").update(provided).digest();
+    const b = crypto.createHash("sha256").update(expected).digest();
+    return crypto.timingSafeEqual(a, b);
+};
+
+app.get("/internal/cleanup", async (req, res, next) => {
+    const cronSecret = process.env.CRON_SECRET;
+    const authorization = req.get("authorization");
+
+    if (
+        !cronSecret ||
+        !isValidCronAuth(authorization ?? "", `Bearer ${cronSecret}`)
+    ) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized"
+        });
+    }
+
+    try {
+        await cleanupExpiredTokens();
+
+        return res.status(200).json({
+            success: true,
+            message: "Expired tokens cleaned up"
+        });
+    } catch (error) {
+        next(error);
+    }
 });
 
 app.use(generalLimiter);

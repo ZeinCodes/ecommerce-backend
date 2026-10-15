@@ -17,7 +17,7 @@ const upload = multer({
         cb(new BadRequestError("Only image files are allowed"));
     },
     limits: {
-        fileSize: 5 * 1024 * 1024
+        fileSize: 1.5 * 1024 * 1024
     }
 });
 

@@ -5,9 +5,11 @@ import ForbiddenError from "../errors/ForbiddenError.js";
 import * as authRepository from "../repositories/users.repository.js";
 import * as refreshTokenRepository from "../repositories/refresh_token.repositories.js"
 import * as JWT from "../utils/jwt.js";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import {
+    sendMail,
+    verificationEmailHtml,
+    passwordResetEmailHtml
+} from "../utils/mailer.js";
 
 const DUMMY_PASSWORD_HASH = bcrypt.hashSync("dummy-password-for-timing", 10);
 
@@ -96,27 +98,11 @@ const register = async (name, email, password) => {
         throw error;
     }
 
-    try {
-        await resend.emails.send({
-            from: process.env.MAIL_FROM,
-            to: user.email,
-            subject: "Verify your email",
-            html: `
-                <p>Click the link below to verify your email:</p>
-
-                <a href="${process.env.FRONTEND_URL}/verify-email?token=${emailVerificationToken}">
-                    Verify your email
-                </a>
-
-                <p>This link expires in 24 hours.</p>
-            `
-        });
-    } catch (error) {
-        console.error(
-            "Failed to send email verification:",
-            error
-        );
-    }
+    await sendMail({
+        to: user.email,
+        subject: "Verify your email",
+        html: verificationEmailHtml(emailVerificationToken)
+    });
 
     return {
         user: {
@@ -138,11 +124,13 @@ const verifyEmail = async (token) => {
 const resendVerification = async (email) => {
     const user = await authRepository.findUserByEmail(email);
 
-    if (!user || user.email_verified_at) return;
+    if (!user || user.email_verified_at) {
+        return;
+    }
 
-    const token = crypto.
-        randomBytes(32).
-        toString("hex");
+    const token = crypto
+        .randomBytes(32)
+        .toString("hex");
 
     const tokenHash = crypto
         .createHash("sha256")
@@ -157,21 +145,15 @@ const resendVerification = async (email) => {
         user.id,
         tokenHash,
         expiresAt
-    )
+    );
 
-    resend.emails.send({
-        from: process.env.MAIL_FROM,
+    await sendMail({
         to: user.email,
         subject: "Verify your email",
-        html: `
-            <p>Click the link below to verify your email:</p>
-            <a href="${process.env.FRONTEND_URL}/verify-email?token=${token}">Verify your email</a>
-            <p>This link expires in 24 hours.</p>
-        `
-    }).catch((error) =>
-        console.error("Failed to send email verification:", error
-        ));
+        html: verificationEmailHtml(token)
+    });
 };
+
 
 const refresh = async (refreshToken) => {
     const payload = JWT.verifyRefreshToken(refreshToken);
@@ -277,23 +259,16 @@ const forgotPassword = async (email) => {
         tokenExpireAt
     );
 
-    resend.emails.send({
-        from: process.env.MAIL_FROM,
+    // Failures are logged inside sendMail and never surfaced, so the response
+    // is identical for existing and unknown emails.
+    await sendMail({
         to: user.email,
         subject: "Reset your password",
-        html: `
-            <p>Click the link below to reset your password:</p>
-            <a href="${process.env.FRONTEND_URL}/reset-password?token=${passwordResetToken}">
-                Reset your password
-            </a>
-            <p>This link expires in 30 minutes.</p>
-        `
-    }).catch((error) => {
-        console.error("Failed to send password reset email:", error);
+        html: passwordResetEmailHtml(passwordResetToken)
     });
 
     return savedToken;
-}
+};
 
 const resetPassword = async (token, newPassword) => {
     const tokenHash = crypto

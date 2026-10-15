@@ -75,23 +75,19 @@ const addNewUser = async (
             name,
             email,
             password_hash,
-            role
+            role,
+            email_verified_at
         )
-        VALUES ($1, $2, $3, $4)
-        RETURNING
+         VALUES ($1, $2, $3, $4, NOW())
+         RETURNING 
             id,
             name,
             email,
             role,
-            created_at`,
-        [
-            name,
-            email,
-            passwordHash,
-            role
-        ]
+            created_at,
+            email_verified_at`,
+        [name, email, passwordHash, role]
     );
-
     return result.rows[0];
 };
 

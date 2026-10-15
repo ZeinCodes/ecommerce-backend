@@ -22,14 +22,6 @@ const REQUIRED_IN_PRODUCTION = [
     "CORS_ORIGIN",
 ];
 
-// Handle unexpected errors from idle PostgreSQL clients.
-pool.on("error", (error) => {
-    console.error(
-        "Unexpected error on idle PostgreSQL client:",
-        error.message
-    );
-});
-
 function validateEnvironment() {
     const required =
         process.env.NODE_ENV === "production"

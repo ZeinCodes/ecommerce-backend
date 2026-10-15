@@ -234,6 +234,9 @@ authRouter.post(
  *                 accessToken:
  *                   type: string
  *                   description: New JWT access token
+ *                 refreshToken:
+ *                   type: string
+ *                   description: Rotated refresh token to use for the next refresh request
  *       401:
  *         description: Invalid or expired refresh token
  *       422:
